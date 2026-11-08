@@ -81,6 +81,8 @@ Keep each pull request to one change, explain what it changes for the person
 using the app, and include the last lines of `make check`. Commit messages are
 short imperative sentences ("Add …", "Fix …").
 
+Be kind: this project follows a [Code of Conduct](CODE_OF_CONDUCT.md).
+
 Contributions are accepted under the project's [Apache License 2.0](LICENSE),
 as section 5 of the licence describes. Don't add artwork, fonts or code you
 can't license that way.
