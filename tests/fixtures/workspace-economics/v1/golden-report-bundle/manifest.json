@@ -1,0 +1,48 @@
+{
+  "contentLevel" : "local",
+  "createdAt" : "2026-01-05T09:00:00.000Z",
+  "files" : [
+    {
+      "bytes" : 1517,
+      "path" : "assessments.json",
+      "schemaVersion" : "effort-assessment/1",
+      "sha256" : "sha256:107c128834e9201f03fde57ceabcb4c8830e889cc8e228d02c11209603937436"
+    },
+    {
+      "bytes" : 5576,
+      "path" : "assumptions.json",
+      "schemaVersion" : "economic-assumptions-bundle/1",
+      "sha256" : "sha256:b5e07f46810760f680a58a2695615e58da931d37b08e846a9ed7a586c32bdae0"
+    },
+    {
+      "bytes" : 3492,
+      "path" : "briefing.md",
+      "schemaVersion" : "text/markdown",
+      "sha256" : "sha256:773207c3de90b070c6b22b47edf0c8efa1d6dfe75d92c86aea2f5a29ca0c98b6"
+    },
+    {
+      "bytes" : 611,
+      "path" : "evidence-index.json",
+      "schemaVersion" : "evidence-index/1",
+      "sha256" : "sha256:2c08bd3189f2e003c4edd2d2da9c87a47f7067a32b5c9dfaa91227b7078352dc"
+    },
+    {
+      "bytes" : 1010,
+      "path" : "outcomes.json",
+      "schemaVersion" : "accepted-outcome/1",
+      "sha256" : "sha256:d216f873fb0e70f47e943f9fde244a3f0cf9fbeefcf113788d441a1f2791ecde"
+    },
+    {
+      "bytes" : 11121,
+      "path" : "report.json",
+      "schemaVersion" : "economic-report/1",
+      "sha256" : "sha256:38e53a2016226387f76c72bf36aeb44c0ed500da15ead0e64f07f51e89cb52e0"
+    }
+  ],
+  "producer" : {
+    "name" : "Playbasis AI Agent Hub",
+    "version" : "economic-reporting/1"
+  },
+  "reportID" : "sha256:cf1c1fbd6ff70e3da14923ac945834fff38172e9cd083b702c1586a5bb82f7aa",
+  "schemaVersion" : "report-bundle/1"
+}

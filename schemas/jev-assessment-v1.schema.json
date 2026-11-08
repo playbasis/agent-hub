@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "jev-assessment-v1.schema.json",
+  "title": "Private external assessment receipt",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "id", "evidenceID", "snapshotDigest", "sessionID", "provider", "inputDigest", "model", "rubricVersion", "rubricHash", "assessedAt", "status"],
+  "properties": {
+    "schemaVersion": {"const": "jev-assessment/1"},
+    "id": {"$ref": "#/$defs/id"}, "evidenceID": {"$ref": "#/$defs/id"}, "sessionID": {"$ref": "#/$defs/id"}, "turnID": {"$ref": "#/$defs/id"},
+    "snapshotDigest": {"$ref": "#/$defs/digest"}, "inputDigest": {"$ref": "#/$defs/digest"}, "rubricHash": {"$ref": "#/$defs/digest"},
+    "provider": {"$ref": "#/$defs/id"}, "model": {"$ref": "#/$defs/id"}, "rubricVersion": {"$ref": "#/$defs/id"},
+    "assessedAt": {"type": "string", "format": "date-time"},
+    "status": {"enum": ["assessed", "failed", "unavailable"]},
+    "result": {"type": "object", "additionalProperties": false, "required": ["workKind", "evidenceLevel", "outcomeSupport", "tags", "retry", "correction", "clarification", "claimNeedsReview"], "properties": {
+      "workKind": {"$ref": "#/$defs/label"}, "evidenceLevel": {"$ref": "#/$defs/label"}, "outcomeSupport": {"$ref": "#/$defs/label"},
+      "tags": {"type": "array", "maxItems": 32, "uniqueItems": true, "items": {"$ref": "#/$defs/label"}},
+      "retry": {"$ref": "#/$defs/tri"}, "correction": {"$ref": "#/$defs/tri"}, "clarification": {"$ref": "#/$defs/tri"}, "claimNeedsReview": {"$ref": "#/$defs/tri"},
+      "modelReportedConfidence": {"type": "number", "minimum": 0, "maximum": 1, "description": "Model-reported; not calibrated."}
+    }},
+    "usage": {"type": "object", "additionalProperties": false, "properties": {"inputTokens": {"type": "integer", "minimum": 0, "maximum": 100000000}, "outputTokens": {"type": "integer", "minimum": 0, "maximum": 100000000}}}
+  },
+  "allOf": [{"if": {"properties": {"status": {"const": "assessed"}}}, "then": {"required": ["result"]}, "else": {"not": {"required": ["result"]}}}],
+  "$defs": {"id": {"type": "string", "minLength": 1, "maxLength": 256, "pattern": "^[A-Za-z0-9._:-]+$"}, "label": {"type": "string", "minLength": 1, "maxLength": 64, "pattern": "^[A-Za-z0-9._:-]+$"}, "digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"}, "tri": {"enum": ["yes", "no", "unknown"]}}
+}

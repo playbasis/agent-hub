@@ -1,0 +1,129 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://local.claude-codex-bridge/schemas/codex-credit-estimates-v1.schema.json",
+  "title": "Codex local credit equivalents / 1",
+  "description": "CodexCreditEstimates.Result. Current standard-rate credit equivalents from canonical local accounting receipts, not actual charges, purchased-credit consumption, or balance reconciliation. Model, project and session rows are alternative groupings, never additive tables. Missing values are unknown, not zero. Future object properties are allowed.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["schemaVersion", "basis", "provenance", "catalog", "scope", "accountingEvidenceDigest", "total", "modelRows", "projectRows", "sessionRows", "sourceCoverageIsPartial", "isValid", "warnings"],
+  "properties": {
+    "schemaVersion": { "const": "codex-credit-estimates/1" },
+    "basis": { "const": "standard_rate_equivalent" },
+    "provenance": { "const": "estimated" },
+    "catalog": { "$ref": "#/$defs/catalog" },
+    "scope": { "$ref": "#/$defs/scope" },
+    "accountingEvidenceDigest": { "type": "string", "description": "Scoped accounting reproduction fingerprint; not an account identifier or a tamper-proof claim." },
+    "total": { "$ref": "#/$defs/summary" },
+    "modelRows": { "type": "array", "items": { "$ref": "#/$defs/row" } },
+    "projectRows": { "type": "array", "items": { "$ref": "#/$defs/row" } },
+    "sessionRows": { "type": "array", "items": { "$ref": "#/$defs/row" } },
+    "sourceCoverageIsPartial": { "type": "boolean" },
+    "isValid": { "type": "boolean" },
+    "warnings": { "$ref": "#/$defs/strings" }
+  },
+  "$defs": {
+    "count": { "type": "integer", "minimum": 0, "maximum": 9223372036854775807 },
+    "strings": { "type": "array", "items": { "type": "string" } },
+    "nullableString": { "type": ["string", "null"] },
+    "nullableDate": { "type": ["string", "null"], "format": "date-time" },
+    "nullableAmount": { "type": ["number", "null"], "minimum": 0, "maximum": 1.7976931348623157e308 },
+    "decimalString": { "type": "string", "maxLength": 128, "pattern": "^[0-9]+(?:\\.[0-9]+)?(?![\\s\\S])" },
+    "nullableDecimalString": { "anyOf": [{ "$ref": "#/$defs/decimalString" }, { "type": "null" }] },
+    "scope": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["source", "to", "asOf", "sessionIDs"],
+      "properties": {
+        "source": { "enum": ["local_native_history", "provider_account", "provider_plan_window", "native_goal", "bridge_session", "direct_provider_response", "repository_history"] },
+        "from": { "$ref": "#/$defs/nullableDate", "description": "Half-open [from,to) accounting window; null means all saved history." },
+        "to": { "type": "string", "format": "date-time" },
+        "asOf": { "type": "string", "format": "date-time" },
+        "sessionIDs": { "type": "array", "uniqueItems": true, "items": { "type": "string" } }
+      }
+    },
+    "rate": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["model", "freshInput", "cachedInput", "output"],
+      "properties": {
+        "model": { "type": "string", "description": "Exact documented model ID; unsupported aliases never inherit a nearby model rate." },
+        "freshInput": { "$ref": "#/$defs/decimalString" },
+        "cachedInput": { "$ref": "#/$defs/decimalString" },
+        "output": { "$ref": "#/$defs/decimalString" },
+        "promotionAtLeastThrough": { "type": ["string", "null"], "format": "date", "description": "Minimum published promotional duration, not a known expiry date." }
+      }
+    },
+    "catalog": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["id", "rateAsOf", "sourceURL", "unit", "rates"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "rateAsOf": { "type": "string", "format": "date", "description": "Verification date, not a claim that these were historical billing rates." },
+        "sourceURL": { "type": "string", "format": "uri" },
+        "unit": { "const": "credits_per_million_tokens" },
+        "effectiveFrom": { "type": ["string", "null"], "format": "date" },
+        "validUntil": { "type": ["string", "null"], "format": "date" },
+        "rates": { "type": "array", "items": { "$ref": "#/$defs/rate" } }
+      }
+    },
+    "coverage": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["receiptCount", "usageReceiptCount", "pricedReceiptCount", "completeReceiptCount", "partialReceiptCount", "unpricedReceiptCount", "observedModelSteps", "freshInputReceipts", "cachedInputReceipts", "outputReceipts", "omittedReceiptCount", "unknownSpeedReceiptCount"],
+      "properties": {
+        "receiptCount": { "$ref": "#/$defs/count" },
+        "usageReceiptCount": { "$ref": "#/$defs/count" },
+        "pricedReceiptCount": { "$ref": "#/$defs/count" },
+        "completeReceiptCount": { "$ref": "#/$defs/count", "description": "Complete for the standard-rate token equivalent only; never proof of billed credits." },
+        "partialReceiptCount": { "$ref": "#/$defs/count" },
+        "unpricedReceiptCount": { "$ref": "#/$defs/count" },
+        "observedModelSteps": { "$ref": "#/$defs/count", "description": "Observed canonical steps, not a request count inferred from native records or aggregate token totals." },
+        "freshInputReceipts": { "$ref": "#/$defs/count" },
+        "cachedInputReceipts": { "$ref": "#/$defs/count" },
+        "outputReceipts": { "$ref": "#/$defs/count" },
+        "omittedReceiptCount": { "$ref": "#/$defs/count" },
+        "unknownSpeedReceiptCount": { "$ref": "#/$defs/count", "description": "No service tier is recorded; reasoning effort, including ultra, does not imply Fast or Ultrafast." }
+      }
+    },
+    "reasonCount": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["reason", "count"],
+      "properties": {
+        "reason": { "enum": ["unknown_model", "unsupported_model", "missing_input", "missing_cached_input", "missing_output", "missing_total", "inconsistent_usage", "non_authoritative_usage", "partial_native_measurement", "unmeasured_usage", "outside_accounting_window", "unplaced_usage", "duplicate_receipt_omitted", "receipt_limit", "invalid_accounting_report", "unsupported_accounting_scope", "arithmetic_failure"] },
+        "count": { "$ref": "#/$defs/count" }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["isPartial", "coverage", "reasons"],
+      "properties": {
+        "estimatedCredits": { "$ref": "#/$defs/nullableAmount", "description": "Approximate display value of the known-component equivalent. Null is unknown, not zero." },
+        "estimatedCreditsExact": { "$ref": "#/$defs/nullableDecimalString", "description": "Exact decimal sum of only priced measured components. Partial coverage does not imply the omitted components were free." },
+        "isPartial": { "type": "boolean" },
+        "coverage": { "$ref": "#/$defs/coverage" },
+        "reasons": { "type": "array", "items": { "$ref": "#/$defs/reasonCount" } }
+      }
+    },
+    "row": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["id", "modelIDs", "sessionIDs", "isPartial", "coverage", "reasons"],
+      "properties": {
+        "id": { "type": "string" },
+        "model": { "$ref": "#/$defs/nullableString" },
+        "projectPath": { "$ref": "#/$defs/nullableString", "description": "Canonical owner project metadata, never a guessed repository or a prompt-derived label." },
+        "sessionID": { "$ref": "#/$defs/nullableString" },
+        "modelIDs": { "$ref": "#/$defs/strings" },
+        "sessionIDs": { "$ref": "#/$defs/strings" },
+        "estimatedCredits": { "$ref": "#/$defs/nullableAmount" },
+        "estimatedCreditsExact": { "$ref": "#/$defs/nullableDecimalString" },
+        "isPartial": { "type": "boolean" },
+        "coverage": { "$ref": "#/$defs/coverage" },
+        "reasons": { "type": "array", "items": { "$ref": "#/$defs/reasonCount" } }
+      }
+    }
+  }
+}

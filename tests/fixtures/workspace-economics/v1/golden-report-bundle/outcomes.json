@@ -1,0 +1,41 @@
+[
+  {
+    "candidateID" : null,
+    "correction" : null,
+    "createdAt" : "2026-01-07T09:00:00.000Z",
+    "decidedBy" : "user",
+    "decision" : "accepted",
+    "deliveryStandard" : "internal_tool",
+    "evidence" : [
+      {
+        "kind" : "commit",
+        "ref" : "c1000001",
+        "repositoryID" : "repo-billing"
+      },
+      {
+        "kind" : "commit",
+        "ref" : "c2000002",
+        "repositoryID" : "repo-billing"
+      },
+      {
+        "kind" : "session",
+        "ref" : "claude:s1",
+        "repositoryID" : null
+      }
+    ],
+    "id" : "5b6c7d8e-9f0a-4b1c-8d2e-3f4a5b6c7d8e",
+    "landedAt" : "2026-01-06T11:00:00.000Z",
+    "operatorTime" : {
+      "basis" : "user_estimate",
+      "highHours" : "3",
+      "lowHours" : "2",
+      "state" : "known"
+    },
+    "outcomeID" : "5b6c7d8e-9f0a-4b1c-8d2e-3f4a5b6c7d8e",
+    "revision" : 1,
+    "schemaVersion" : "accepted-outcome/1",
+    "summary" : "Reviewed by the team",
+    "supersedesID" : null,
+    "title" : "Billing export"
+  }
+]

@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Local network path observation history",
+  "description": "Chart context only. Route state is not Internet/provider health or causality. Missing observation coverage remains unknown.",
+  "type": "object", "additionalProperties": false,
+  "required": ["schemaVersion", "intervals"],
+  "properties": {
+    "schemaVersion": {"const": "activity-connection-history/1"},
+    "intervals": {
+      "type": "array", "maxItems": 2048,
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["id", "monitorID", "start", "end", "state"],
+        "properties": {
+          "id": {"type": "string", "minLength": 1, "maxLength": 256},
+          "monitorID": {"type": "string", "minLength": 1, "maxLength": 128},
+          "start": {"type": "string", "format": "date-time"},
+          "end": {"type": "string", "format": "date-time"},
+          "state": {"enum": ["routeAvailable", "routeUnavailable", "needsConnection"]}
+        }
+      }
+    }
+  }
+}

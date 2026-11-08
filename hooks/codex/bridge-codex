@@ -1,0 +1,10 @@
+#!/bin/sh
+set -eu
+
+if [ "$#" -eq 0 ]; then
+  echo "usage: bridge-codex <goal>" >&2
+  exit 64
+fi
+
+exec bridge start --project "$PWD" --agent codex --goal "$*"
+

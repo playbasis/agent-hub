@@ -1,0 +1,4 @@
+# Use gitleaks' built-in rules as they are. Do not add allowlists to silence a
+# finding: rotate the key and remove it instead.
+[extend]
+useDefault = true

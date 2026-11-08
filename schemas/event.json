@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://local.claude-codex-bridge/schemas/event-1.0.json",
+  "title": "BridgeEvent",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "id",
+    "timestamp",
+    "source",
+    "type",
+    "content",
+    "session_id",
+    "project_path",
+    "metadata"
+  ],
+  "properties": {
+    "schema_version": { "const": "1.0" },
+    "id": { "type": "string", "format": "uuid" },
+    "timestamp": { "type": "string", "format": "date-time" },
+    "source": { "enum": ["claude", "codex", "bridge"] },
+    "type": {
+      "enum": [
+        "session_start",
+        "turn_complete",
+        "tool_use",
+        "rate_limit",
+        "error",
+        "user_message"
+      ]
+    },
+    "content": {
+      "oneOf": [
+        { "type": "string", "maxLength": 1000000 },
+        { "type": "object" },
+        { "type": "array" },
+        { "type": "number" },
+        { "type": "boolean" },
+        { "type": "null" }
+      ]
+    },
+    "session_id": { "type": "string", "minLength": 1, "maxLength": 200 },
+    "project_path": { "type": "string", "minLength": 1, "maxLength": 4096 },
+    "metadata": { "type": "object" }
+  }
+}
+

@@ -1,0 +1,160 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://local.claude-codex-bridge/schemas/credit-history-v1.schema.json",
+  "title": "Credit history / 1",
+  "description": "CreditHistoryReport. Provider-reported balances, exact mathematical balance changes, and explicitly estimated drawdown/forecast remain distinct. Account-wide net decline must never be attributed to this Mac, a project, session or model. The persisted record contract is at #/$defs/record. Missing optional measurements are unknown, not zero. Future object properties are allowed.",
+  "$ref": "#/$defs/report",
+  "$defs": {
+    "count": { "type": "integer", "minimum": 0, "maximum": 9223372036854775807 },
+    "date": { "type": "string", "format": "date-time" },
+    "nullableDate": { "type": ["string", "null"], "format": "date-time" },
+    "hash": { "type": "string", "pattern": "^[0-9a-f]{64}(?![\\s\\S])" },
+    "nullableHash": { "anyOf": [{ "$ref": "#/$defs/hash" }, { "type": "null" }] },
+    "unsignedDecimal": { "type": "string", "pattern": "^[0-9]+(?:\\.[0-9]+)?(?![\\s\\S])", "description": "Exact decimal string, without exponent, whitespace, currency or a sign. Derived arithmetic may exceed the provider balance text length." },
+    "nullableUnsignedDecimal": { "anyOf": [{ "$ref": "#/$defs/unsignedDecimal" }, { "type": "null" }] },
+    "balance": { "type": "string", "maxLength": 128, "pattern": "^[0-9]+(?:\\.[0-9]+)?(?![\\s\\S])", "description": "Exact nonnegative provider decimal text in credits. This is not USD and must not be parsed through binary floating point. Missing is unknown, not zero." },
+    "nullableBalance": { "anyOf": [{ "$ref": "#/$defs/balance" }, { "type": "null" }] },
+    "nullableSignedDecimal": { "type": ["string", "null"], "pattern": "^-?[0-9]+(?:\\.[0-9]+)?(?![\\s\\S])", "description": "Exact mathematical balance delta, not a usage receipt or an inferred purchase." },
+    "nullableBoolean": { "type": ["boolean", "null"] },
+    "nonnegativeNumber": { "type": "number", "minimum": 0, "maximum": 1.7976931348623157e308 },
+    "nullableNonnegativeNumber": { "type": ["number", "null"], "minimum": 0, "maximum": 1.7976931348623157e308 },
+    "ratio": { "type": "number", "minimum": 0, "maximum": 1 },
+    "warnings": { "type": "array", "items": { "type": "string" }, "description": "Stable machine-readable warning codes; not free-form user content." },
+    "scope": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["kind", "id"],
+      "properties": {
+        "kind": { "enum": ["account", "anonymous", "imported"] },
+        "id": { "$ref": "#/$defs/hash" }
+      },
+      "description": "Local pseudonymous history partition, not verified identity. Anonymous/imported scopes cannot inherit a current account forecast."
+    },
+    "nullableScope": { "anyOf": [{ "$ref": "#/$defs/scope" }, { "type": "null" }] },
+    "record": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["schemaVersion", "sequence", "scope", "observedAt", "source", "limitID", "warnings", "recordHash"],
+      "properties": {
+        "schemaVersion": { "const": "credit-history/1" },
+        "sequence": { "$ref": "#/$defs/count", "description": "Append sequence; persisted store validation additionally requires consecutive one-based order." },
+        "scope": { "$ref": "#/$defs/scope" },
+        "observedAt": { "$ref": "#/$defs/date" },
+        "reportedBalance": { "$ref": "#/$defs/nullableBalance" },
+        "hasCredits": { "$ref": "#/$defs/nullableBoolean" },
+        "unlimited": { "$ref": "#/$defs/nullableBoolean" },
+        "source": { "enum": ["live", "cached", "observed", "unavailable"], "description": "QuotaSource raw value; persisted history admission additionally requires live provider observations." },
+        "limitID": { "const": "codex" },
+        "warnings": { "$ref": "#/$defs/warnings" },
+        "previousHash": { "$ref": "#/$defs/nullableHash" },
+        "recordHash": { "$ref": "#/$defs/hash" }
+      },
+      "description": "Append-only sanitized provider reading. JSON Schema cannot prove hash-chain integrity, ownership, sequence continuity, or source authenticity; the store validates them."
+    },
+    "scopeSummary": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["scope", "readingCount", "firstObservedAt", "lastObservedAt"],
+      "properties": {
+        "scope": { "$ref": "#/$defs/scope" },
+        "readingCount": { "$ref": "#/$defs/count" },
+        "firstObservedAt": { "$ref": "#/$defs/date" },
+        "lastObservedAt": { "$ref": "#/$defs/date" }
+      }
+    },
+    "balancePoint": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["id", "observedAt", "isConsistent"],
+      "properties": {
+        "id": { "type": "string" },
+        "observedAt": { "$ref": "#/$defs/date" },
+        "reportedBalance": { "$ref": "#/$defs/nullableBalance" },
+        "hasCredits": { "$ref": "#/$defs/nullableBoolean" },
+        "unlimited": { "$ref": "#/$defs/nullableBoolean" },
+        "isConsistent": { "type": "boolean" }
+      }
+    },
+    "interval": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["id", "from", "to", "kind", "eligibleForRate"],
+      "properties": {
+        "id": { "type": "string" },
+        "from": { "$ref": "#/$defs/date" },
+        "to": { "$ref": "#/$defs/date" },
+        "kind": { "enum": ["decrease", "unchanged", "fundingOrAdjustment", "gap", "unavailable", "conflicting", "clockAnomaly"] },
+        "derivedBalanceDelta": { "$ref": "#/$defs/nullableSignedDecimal" },
+        "estimatedDrawdown": { "$ref": "#/$defs/nullableUnsignedDecimal", "description": "Net decline estimated as drawdown, not invoiced or locally attributable consumption." },
+        "eligibleForRate": { "type": "boolean", "description": "Gaps, adjustments, missing values and conflicting observations are not silently counted as zero usage." }
+      }
+    },
+    "rate": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["id", "from", "to", "estimatedDrawdown", "estimatedCreditsPerHour"],
+      "properties": {
+        "id": { "type": "string" },
+        "from": { "$ref": "#/$defs/date" },
+        "to": { "$ref": "#/$defs/date" },
+        "estimatedDrawdown": { "$ref": "#/$defs/unsignedDecimal" },
+        "estimatedCreditsPerHour": { "$ref": "#/$defs/nonnegativeNumber", "description": "Approximate account-wide pace derived from a qualifying balance interval, not a measured consumption rate." }
+      }
+    },
+    "forecast": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["state", "reason", "eligiblePairCount", "observedDurationSeconds", "coverageRatio", "caveat"],
+      "properties": {
+        "state": { "enum": ["estimated", "insufficientEvidence", "unavailable"] },
+        "reason": { "type": "string", "description": "Stable reason code; state insufficientEvidence is the actual camelCase Swift raw value." },
+        "reportedBalance": { "$ref": "#/$defs/nullableBalance" },
+        "observedAt": { "$ref": "#/$defs/nullableDate" },
+        "estimatedCreditsPerHour": { "$ref": "#/$defs/nullableNonnegativeNumber" },
+        "estimatedSecondsRemaining": { "$ref": "#/$defs/nullableNonnegativeNumber" },
+        "fasterPaceSecondsRemaining": { "$ref": "#/$defs/nullableNonnegativeNumber" },
+        "slowerPaceSecondsRemaining": { "$ref": "#/$defs/nullableNonnegativeNumber", "description": "Null when observed pauses make the slower-pace bound open-ended, not zero time remaining." },
+        "eligiblePairCount": { "$ref": "#/$defs/count" },
+        "observedDurationSeconds": { "$ref": "#/$defs/nonnegativeNumber" },
+        "coverageRatio": { "$ref": "#/$defs/ratio" },
+        "caveat": { "type": "string" }
+      }
+    },
+    "completeness": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["integrityVerified", "retainedRecordCount", "selectedRecordCount", "invalidLineCount", "tornFinalLine", "eligibleDurationSeconds", "coverageRatio"],
+      "properties": {
+        "integrityVerified": { "type": "boolean" },
+        "retainedRecordCount": { "$ref": "#/$defs/count" },
+        "selectedRecordCount": { "$ref": "#/$defs/count" },
+        "invalidLineCount": { "$ref": "#/$defs/count" },
+        "tornFinalLine": { "type": "boolean" },
+        "firstObservedAt": { "$ref": "#/$defs/nullableDate" },
+        "lastObservedAt": { "$ref": "#/$defs/nullableDate" },
+        "eligibleDurationSeconds": { "$ref": "#/$defs/nonnegativeNumber" },
+        "coverageRatio": { "$ref": "#/$defs/ratio", "description": "Coverage between first and last selected readings, not continuous coverage of the entire requested calendar window." }
+      }
+    },
+    "report": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["schemaVersion", "generatedAt", "from", "to", "scopes", "records", "balancePoints", "intervals", "rates", "forecast", "completeness", "warnings"],
+      "properties": {
+        "schemaVersion": { "const": "credit-history/1" },
+        "generatedAt": { "$ref": "#/$defs/date" },
+        "from": { "$ref": "#/$defs/date" },
+        "to": { "$ref": "#/$defs/date" },
+        "selectedScope": { "$ref": "#/$defs/nullableScope" },
+        "scopes": { "type": "array", "items": { "$ref": "#/$defs/scopeSummary" } },
+        "records": { "type": "array", "items": { "$ref": "#/$defs/record" } },
+        "balancePoints": { "type": "array", "items": { "$ref": "#/$defs/balancePoint" } },
+        "intervals": { "type": "array", "items": { "$ref": "#/$defs/interval" } },
+        "rates": { "type": "array", "items": { "$ref": "#/$defs/rate" } },
+        "forecast": { "$ref": "#/$defs/forecast" },
+        "completeness": { "$ref": "#/$defs/completeness" },
+        "warnings": { "$ref": "#/$defs/warnings" }
+      }
+    }
+  }
+}

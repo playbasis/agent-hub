@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:playbasis:ai-agent-hub:accepted-outcome:1",
+  "title": "Accepted outcome revision",
+  "description": "One immutable revision of a delivered outcome: a person's decision to accept or reject a piece of work, or to withdraw an earlier acceptance after a regression or revert. Revision 1 names its own outcome; later revisions supersede the previous record. Commits and sessions suggest outcomes; only this record establishes acceptance. An outcome is counted once, in the reporting period holding landedAt, however many agents, branches and commits contributed.",
+  "type": "object",
+  "additionalProperties": false,
+  "patternProperties": { "^x-": true },
+  "required": ["schemaVersion", "id", "outcomeID", "revision", "supersedesID", "createdAt", "decision", "decidedBy", "title", "summary", "deliveryStandard", "evidence", "landedAt", "operatorTime", "candidateID", "correction"],
+  "properties": {
+    "schemaVersion": { "const": "accepted-outcome/1" },
+    "id": { "$ref": "workspace-common-v1.schema.json#/$defs/uuid" },
+    "outcomeID": { "$ref": "workspace-common-v1.schema.json#/$defs/uuid" },
+    "revision": { "type": "integer", "minimum": 1, "maximum": 2048 },
+    "supersedesID": { "$ref": "workspace-common-v1.schema.json#/$defs/nullableUUID" },
+    "createdAt": { "$ref": "workspace-common-v1.schema.json#/$defs/timestamp" },
+    "decision": { "enum": ["accepted", "rejected", "withdrawn"] },
+    "decidedBy": { "const": "user", "description": "v1 records only a person's decision. A model can suggest; it cannot accept." },
+    "title": { "type": "string", "minLength": 1, "maxLength": 200 },
+    "summary": { "type": ["string", "null"], "minLength": 1, "maxLength": 1200 },
+    "deliveryStandard": { "$ref": "workspace-common-v1.schema.json#/$defs/deliveryStandard" },
+    "evidence": {
+      "type": "array",
+      "items": { "$ref": "workspace-common-v1.schema.json#/$defs/outcomeEvidence" },
+      "minItems": 1,
+      "maxItems": 256,
+      "uniqueItems": true
+    },
+    "landedAt": { "$ref": "workspace-common-v1.schema.json#/$defs/timestamp", "description": "Latest evidence commit, else the decision time." },
+    "operatorTime": { "$ref": "workspace-common-v1.schema.json#/$defs/operatorTime" },
+    "candidateID": { "type": ["string", "null"], "minLength": 1, "maxLength": 128 },
+    "correction": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "patternProperties": { "^x-": true },
+      "required": ["reason", "note"],
+      "properties": {
+        "reason": { "enum": ["regression", "reverted", "duplicate", "scope_change", "other"] },
+        "note": { "type": ["string", "null"], "minLength": 1, "maxLength": 1200 }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "revision": { "const": 1 } } },
+      "then": { "properties": { "supersedesID": { "type": "null" } } },
+      "else": { "properties": { "supersedesID": { "type": "string" } } }
+    },
+    {
+      "if": { "properties": { "decision": { "const": "withdrawn" } } },
+      "then": { "properties": { "correction": { "type": "object" }, "revision": { "minimum": 2 } } }
+    }
+  ]
+}

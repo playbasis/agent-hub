@@ -1,0 +1,122 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:playbasis:ai-agent-hub:workspace-common:1",
+  "title": "Shared definitions for workspace receipts, outcomes, assessments and economic reports",
+  "description": "Wire rules: timestamps are RFC 3339 with a zone, written in UTC at millisecond precision. Token quantities are canonical base-10 strings from 0 to 9223372036854775807 so no reader rounds them. Money, hours and ratios are decimal strings with at most 18 integer and 6 fraction digits, no exponent. Small counts are JSON integers up to 2^53-1. Null (or, in reports, an absent optional field) means unknown, never zero. Objects reject unknown properties except x- extensions, which readers ignore and digests exclude.",
+  "$defs": {
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]{1,9})?(Z|[+-][0-9]{2}:[0-9]{2})$"
+    },
+    "nullableTimestamp": {
+      "type": ["string", "null"],
+      "format": "date-time",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]{1,9})?(Z|[+-][0-9]{2}:[0-9]{2})$"
+    },
+    "tokenQuantity": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]{0,18})$",
+      "description": "Canonical base-10 integer string, 0 to 9223372036854775807. Readers reject values above that bound."
+    },
+    "nullableTokenQuantity": {
+      "type": ["string", "null"],
+      "pattern": "^(0|[1-9][0-9]{0,18})$"
+    },
+    "decimal": {
+      "type": "string",
+      "pattern": "^-?(0|[1-9][0-9]{0,17})(\\.[0-9]{1,6})?$",
+      "description": "Exact decimal. Producers write the canonical form: no trailing fraction zeros and no -0."
+    },
+    "nonNegativeDecimal": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]{0,17})(\\.[0-9]{1,6})?$"
+    },
+    "nullableNonNegativeDecimal": {
+      "type": ["string", "null"],
+      "pattern": "^(0|[1-9][0-9]{0,17})(\\.[0-9]{1,6})?$"
+    },
+    "currency": { "type": "string", "pattern": "^[A-Z]{3}$", "description": "ISO 4217 code." },
+    "money": {
+      "type": "object",
+      "additionalProperties": false,
+      "patternProperties": { "^x-": true },
+      "required": ["amount", "currency"],
+      "properties": {
+        "amount": { "$ref": "#/$defs/decimal" },
+        "currency": { "$ref": "#/$defs/currency" }
+      }
+    },
+    "estimateRange": {
+      "type": "object",
+      "additionalProperties": false,
+      "patternProperties": { "^x-": true },
+      "required": ["low", "base", "high"],
+      "properties": {
+        "low": { "$ref": "#/$defs/decimal" },
+        "base": { "$ref": "#/$defs/decimal" },
+        "high": { "$ref": "#/$defs/decimal" }
+      },
+      "description": "Low, base and high in one unit, with low <= base <= high (checked by readers)."
+    },
+    "moneyRange": {
+      "type": "object",
+      "additionalProperties": false,
+      "patternProperties": { "^x-": true },
+      "required": ["currency", "low", "base", "high"],
+      "properties": {
+        "currency": { "$ref": "#/$defs/currency" },
+        "low": { "$ref": "#/$defs/decimal" },
+        "base": { "$ref": "#/$defs/decimal" },
+        "high": { "$ref": "#/$defs/decimal" }
+      }
+    },
+    "digest": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+    "uuid": { "type": "string", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$" },
+    "nullableUUID": { "type": ["string", "null"], "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$" },
+    "identifier": { "type": "string", "minLength": 1, "maxLength": 512 },
+    "nullableIdentifier": { "type": ["string", "null"], "minLength": 1, "maxLength": 512 },
+    "providerSlug": { "type": "string", "pattern": "^[a-z][a-z0-9_-]{0,31}$" },
+    "slug": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$" },
+    "count": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
+    "nullableCount": { "type": ["integer", "null"], "minimum": 0, "maximum": 9007199254740991 },
+    "deliveryStandard": {
+      "enum": ["prototype", "internal_tool", "production"],
+      "description": "The standard an outcome is judged against. Estimates compare like with like."
+    },
+    "workingBaseline": {
+      "enum": ["historical_2021_2022", "contemporary_2025_2026", "measured_comparable"],
+      "description": "Who the comparable human is. Independent of the labor-rate vintage."
+    },
+    "outcomeEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "patternProperties": { "^x-": true },
+      "required": ["kind", "repositoryID", "ref"],
+      "properties": {
+        "kind": { "enum": ["commit", "session", "goal", "artifact"] },
+        "repositoryID": { "$ref": "#/$defs/nullableIdentifier" },
+        "ref": { "$ref": "#/$defs/identifier" }
+      },
+      "if": { "properties": { "kind": { "const": "commit" } } },
+      "then": { "properties": { "repositoryID": { "type": "string" }, "ref": { "pattern": "^[0-9a-f]{7,64}$" } } },
+      "description": "A pointer to existing evidence. A link records what was reviewed; it doesn't prove authorship."
+    },
+    "operatorTime": {
+      "type": "object",
+      "additionalProperties": false,
+      "patternProperties": { "^x-": true },
+      "required": ["state", "lowHours", "highHours", "basis"],
+      "properties": {
+        "state": { "enum": ["known", "unknown"] },
+        "lowHours": { "$ref": "#/$defs/nullableNonNegativeDecimal" },
+        "highHours": { "$ref": "#/$defs/nullableNonNegativeDecimal" },
+        "basis": { "enum": ["user_estimate", "timesheet", null] }
+      },
+      "if": { "properties": { "state": { "const": "known" } } },
+      "then": { "properties": { "lowHours": { "type": "string" }, "highHours": { "type": "string" }, "basis": { "type": "string" } } },
+      "else": { "properties": { "lowHours": { "type": "null" }, "highHours": { "type": "null" }, "basis": { "type": "null" } } },
+      "description": "Hands-on time the person reports. Never inferred from agent runtime; unknown is not zero."
+    }
+  }
+}

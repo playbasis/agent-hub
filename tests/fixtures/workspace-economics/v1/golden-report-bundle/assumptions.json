@@ -1,0 +1,163 @@
+{
+  "assumptions" : {
+    "baseline" : "historical_2021_2022",
+    "customRates" : [
+
+    ],
+    "hoursPerDay" : "8",
+    "rateID" : "us-bls-15-1252-2025-05",
+    "subscriptions" : [
+      {
+        "id" : "claude-max",
+        "label" : "Claude Max",
+        "monthly" : {
+          "amount" : "200",
+          "currency" : "USD"
+        },
+        "provider" : "claude"
+      },
+      {
+        "id" : "chatgpt-pro",
+        "label" : "ChatGPT Pro",
+        "monthly" : {
+          "amount" : "200",
+          "currency" : "USD"
+        },
+        "provider" : "codex"
+      }
+    ],
+    "timeZone" : "GMT"
+  },
+  "formulas" : [
+    "Equivalent person-days = estimated human hours ÷ hours per day.",
+    "Gross labor equivalent = estimated human hours × hourly rate (a wage equivalent, not revenue, market value or cash saved).",
+    "Operator cost = the person's hands-on hours × the operator rate.",
+    "Tooling cost = each subscription's monthly price × days in the period ÷ (365.2425 ÷ 12), times the scope's share of known tokens when a project is chosen.",
+    "Net opportunity benefit = gross labor equivalent − operator cost − tooling cost; the low end uses the most operator time and the high end the least.",
+    "Leverage = estimated human hours ÷ hands-on hours.",
+    "Money is rounded to cents, halves to even, after each total; inputs keep their exact decimals."
+  ],
+  "rates" : [
+    {
+      "basis" : "median_wage",
+      "hourly" : {
+        "amount" : "58.05",
+        "currency" : "USD"
+      },
+      "id" : "us-bls-15-1252-2021-05",
+      "label" : "US software developer median wage, May 2021",
+      "region" : "United States",
+      "source" : {
+        "publisher" : "U.S. Bureau of Labor Statistics, OEWS",
+        "retrieved" : "2026-11-06",
+        "url" : "https://www.bls.gov/oes/2021/may/oes151252.htm"
+      },
+      "vintage" : "May 2021"
+    },
+    {
+      "basis" : "median_wage",
+      "hourly" : {
+        "amount" : "61.18",
+        "currency" : "USD"
+      },
+      "id" : "us-bls-15-1252-2022-05",
+      "label" : "US software developer median wage, May 2022",
+      "region" : "United States",
+      "source" : {
+        "publisher" : "U.S. Bureau of Labor Statistics, OEWS",
+        "retrieved" : "2026-11-06",
+        "url" : "https://www.bls.gov/oes/2022/may/oes151252.htm"
+      },
+      "vintage" : "May 2022"
+    },
+    {
+      "basis" : "median_wage",
+      "derivation" : "Median annual wage $135,980 ÷ 2,080 hours, rounded to the cent",
+      "hourly" : {
+        "amount" : "65.38",
+        "currency" : "USD"
+      },
+      "id" : "us-bls-15-1252-2025-05",
+      "label" : "US software developer median wage, May 2025",
+      "region" : "United States",
+      "source" : {
+        "publisher" : "U.S. Bureau of Labor Statistics, Occupational Outlook Handbook",
+        "retrieved" : "2026-11-06",
+        "url" : "https://www.bls.gov/ooh/computer-and-information-technology/software-developers.htm"
+      },
+      "vintage" : "May 2025"
+    }
+  ],
+  "rubric" : {
+    "contemporaryFactors" : {
+      "base" : "0.8",
+      "high" : "1.1",
+      "low" : "0.5"
+    },
+    "notes" : [
+      "Choose the size from what was delivered and how much it had to integrate, not from lines changed or tokens used.",
+      "Production-oriented work adds hardening, documentation, security and operational readiness (×1.75); a prototype skips most of it (×0.6).",
+      "For a developer with 2025–2026 assistants the low, base and high hours are scaled by 0.5, 0.8 and 1.1. Measured uplift from assistants is uncertain and can be negative (METR's 2025 study of experienced open-source developers found them 19% slower), so the range is deliberately wide.",
+      "Hub defaults are a starting point for calibration, not a measurement. Corrections are kept as new assessments."
+    ],
+    "sizes" : [
+      {
+        "description" : "A well-understood change in one place: a fix, a copy or configuration change, a small refactor.",
+        "hours" : {
+          "base" : "2",
+          "high" : "4",
+          "low" : "1"
+        },
+        "id" : "xs",
+        "title" : "Small change"
+      },
+      {
+        "description" : "One capability inside a single component, with its tests.",
+        "hours" : {
+          "base" : "8",
+          "high" : "16",
+          "low" : "4"
+        },
+        "id" : "s",
+        "title" : "Contained capability"
+      },
+      {
+        "description" : "A feature spanning a few components (interface, logic, storage) or one contained integration.",
+        "hours" : {
+          "base" : "28",
+          "high" : "48",
+          "low" : "16"
+        },
+        "id" : "m",
+        "title" : "Feature across components"
+      },
+      {
+        "description" : "A subsystem or cross-cutting capability: several components, new contracts or data formats, a migration or an external integration.",
+        "hours" : {
+          "base" : "90",
+          "high" : "160",
+          "low" : "48"
+        },
+        "id" : "l",
+        "title" : "Subsystem or integration"
+      },
+      {
+        "description" : "A major product capability or a new application area with its own architecture.",
+        "hours" : {
+          "base" : "280",
+          "high" : "480",
+          "low" : "160"
+        },
+        "id" : "xl",
+        "title" : "Major capability"
+      }
+    ],
+    "standardFactors" : {
+      "internal_tool" : "1",
+      "production" : "1.75",
+      "prototype" : "0.6"
+    },
+    "version" : "hub-size-rubric/1"
+  },
+  "schemaVersion" : "economic-assumptions-bundle/1"
+}

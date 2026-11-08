@@ -1,0 +1,462 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:playbasis:ai-agent-hub:economic-report:1",
+  "title": "Economic work report",
+  "description": "What a person spent on AI-assisted work in one period and scope, what usable work landed and was accepted, and what comparable human effort it might represent. Usage and time come from one frozen accounting/1 snapshot; outcomes and estimates from the append-only ledger; money from stated assumptions. The page, CLI, export and copied briefing render this document and never recompute it. reportID is sha256 over RFC 8785 canonical JSON of the report without reportID, generatedAt and x- fields. Optional fields that are absent mean unknown or not applicable, never zero. Wage equivalents are not revenue, market value or cash saved.",
+  "type": "object",
+  "additionalProperties": false,
+  "patternProperties": { "^x-": true },
+  "required": ["schemaVersion", "reportID", "generatedAt", "contentLevel", "period", "scope", "snapshot", "usage", "time", "costs", "outcomes", "effort", "economics", "friction", "uncertainty", "nextPrompt", "assumptions"],
+  "properties": {
+    "schemaVersion": { "const": "economic-report/1" },
+    "reportID": { "$ref": "workspace-common-v1.schema.json#/$defs/digest" },
+    "generatedAt": { "$ref": "workspace-common-v1.schema.json#/$defs/timestamp" },
+    "contentLevel": { "enum": ["local", "sanitized"], "description": "sanitized replaces titles, commit subjects, repository names, paths and identifiers before sharing." },
+    "period": {
+      "type": "object",
+      "additionalProperties": false,
+      "patternProperties": { "^x-": true },
+      "required": ["to", "timeZone", "granularity", "label"],
+      "properties": {
+        "from": { "$ref": "workspace-common-v1.schema.json#/$defs/timestamp" },
+        "to": { "$ref": "workspace-common-v1.schema.json#/$defs/timestamp" },
+        "timeZone": { "type": "string", "minLength": 1, "maxLength": 64 },
+        "granularity": { "enum": ["day", "week", "month", "year", "rolling", "custom", "all"] },
+        "label": { "type": "string", "minLength": 1, "maxLength": 80 }
+      },
+      "description": "Half-open [from, to). No from means all saved history."
+    },
+    "scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "patternProperties": { "^x-": true },
+      "required": ["projects", "sessions"],
+      "properties": {
+        "projects": { "type": "array", "items": { "$ref": "#/$defs/projectRef" } },
+        "projectFilter": { "type": "string", "minLength": 1, "maxLength": 4096 },
+        "provider": { "$ref": "workspace-common-v1.schema.json#/$defs/providerSlug" },
+        "sessions": { "$ref": "workspace-common-v1.schema.json#/$defs/count" }
+      }
+    },
+    "snapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "patternProperties": { "^x-": true },
+      "required": ["asOf", "accountingSchema", "metricDefinitions", "accountingFingerprint", "sourceCoverageIsPartial"],
+      "properties": {
+        "asOf": { "$ref": "workspace-common-v1.schema.json#/$defs/timestamp" },
+        "accountingSchema": { "const": "accounting/1" },
+        "metricDefinitions": { "type": "string", "minLength": 1 },
+        "accountingFingerprint": { "$ref": "workspace-common-v1.schema.json#/$defs/digest", "description": "sha256 over RFC 8785 canonical JSON of the accounting/1 scope (from, to, asOf, sorted session IDs) and totals (known tokens and output, model steps, usage records, native records, active and agent seconds, partial flags). Equal fingerprints mean the same accounting result; per-receipt evidence travels in receipts.jsonl." },
+        "repositoriesScannedAt": { "$ref": "workspace-common-v1.schema.json#/$defs/timestamp" },
+        "sourceCoverageIsPartial": { "type": "boolean" }
+      }
+    },
+    "usage": {
+      "type": "object",
+      "additionalProperties": false,
+      "patternProperties": { "^x-": true },
+      "required": ["scope", "tokensArePartial", "modelSteps", "sessions", "byProvider", "byModel"],
+      "properties": {
+        "scope": { "const": "local_native_history", "description": "Provider account and plan counters describe other populations and are never added here." },
+        "tokens": { "$ref": "workspace-common-v1.schema.json#/$defs/tokenQuantity" },
+        "outputTokens": { "$ref": "workspace-common-v1.schema.json#/$defs/tokenQuantity" },
+        "tokensArePartial": { "type": "boolean" },
+        "composition": {
+          "type": "object",
+          "additionalProperties": false,
+          "patternProperties": { "^x-": true },
+          "required": ["freshInput", "rereadContext", "cacheWrites", "output"],
+          "properties": {
+            "freshInput": { "$ref": "workspace-common-v1.schema.json#/$defs/tokenQuantity" },
+            "rereadContext": { "$ref": "workspace-common-v1.schema.json#/$defs/tokenQuantity" },
+            "cacheWrites": { "$ref": "workspace-common-v1.schema.json#/$defs/tokenQuantity" },
+            "output": { "$ref": "workspace-common-v1.schema.json#/$defs/tokenQuantity" }
+          }
+        },
+        "rereadShare": { "$ref": "workspace-common-v1.schema.json#/$defs/nonNegativeDecimal" },
+        "modelSteps": { "$ref": "workspace-common-v1.schema.json#/$defs/count" },
+        "sessions": { "$ref": "workspace-common-v1.schema.json#/$defs/count" },
+        "byProvider": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "patternProperties": { "^x-": true },
+            "required": ["provider", "modelSteps", "sessions"],
+            "properties": {
+              "provider": { "$ref": "workspace-common-v1.schema.json#/$defs/providerSlug" },
+              "tokens": { "$ref": "workspace-common-v1.schema.json#/$defs/tokenQuantity" },
+              "outputTokens": { "$ref": "workspace-common-v1.schema.json#/$defs/tokenQuantity" },
+              "modelSteps": { "$ref": "workspace-common-v1.schema.json#/$defs/count" },
+              "sessions": { "$ref": "workspace-common-v1.schema.json#/$defs/count" }
+            }
+          }
+        },
+        "byModel": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "patternProperties": { "^x-": true },
+            "required": ["provider", "modelSteps"],
+            "properties": {
+              "provider": { "$ref": "workspace-common-v1.schema.json#/$defs/providerSlug" },
+              "model": { "type": "string", "minLength": 1, "maxLength": 256 },
+              "tokens": { "$ref": "workspace-common-v1.schema.json#/$defs/tokenQuantity" },
+              "outputTokens": { "$ref": "workspace-common-v1.schema.json#/$defs/tokenQuantity" },
+              "modelSteps": { "$ref": "workspace-common-v1.schema.json#/$defs/count" }
+            }
+          }
+        }
+      }
+    },
+    "time": {
+      "type": "object",
+      "additionalProperties": false,
+      "patternProperties": { "^x-": true },
+      "required": ["operatorTime"],
+      "properties": {
+        "activeSeconds": { "$ref": "workspace-common-v1.schema.json#/$defs/count", "description": "Union of recorded intervals: when any agent was working. Includes waits; not human effort." },
+        "agentSeconds": { "$ref": "workspace-common-v1.schema.json#/$defs/count", "description": "Intervals unioned per session, then summed: parallel agents add up." },
+        "localCPUSeconds": { "$ref": "workspace-common-v1.schema.json#/$defs/count", "description": "Not measured in v1." },
+        "providerComputeSeconds": { "$ref": "workspace-common-v1.schema.json#/$defs/count", "description": "Providers don't report it; stays unknown." },
+        "operatorTime": {
+          "type": "object",
+          "additionalProperties": false,
+          "patternProperties": { "^x-": true },
+          "required": ["state", "outcomesWithTime", "outcomesWithoutTime"],
+          "properties": {
+            "state": { "enum": ["known", "partial", "unknown"] },
+            "hours": { "$ref": "workspace-common-v1.schema.json#/$defs/estimateRange", "description": "Sum over accepted outcomes with time; base is the midpoint." },
+            "outcomesWithTime": { "$ref": "workspace-common-v1.schema.json#/$defs/count" },
+            "outcomesWithoutTime": { "$ref": "workspace-common-v1.schema.json#/$defs/count" }
+          }
+        }
+      }
+    },
+    "costs": {
+      "type": "object",
+      "additionalProperties": false,
+      "patternProperties": { "^x-": true },
+      "required": ["state", "allocation", "tooling"],
+      "properties": {
+        "state": { "enum": ["known", "unknown", "mixed_currencies"] },
+        "allocation": { "enum": ["whole_period", "token_share"], "description": "token_share applies when a project is chosen: the scope's share of the period's known tokens." },
+        "allocationShare": { "$ref": "workspace-common-v1.schema.json#/$defs/nonNegativeDecimal" },
+        "tooling": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "patternProperties": { "^x-": true },
+            "required": ["subscriptionID", "provider", "label", "amount", "calculation"],
+            "properties": {
+              "subscriptionID": { "$ref": "workspace-common-v1.schema.json#/$defs/slug" },
+              "provider": { "$ref": "workspace-common-v1.schema.json#/$defs/providerSlug" },
+              "label": { "type": "string", "minLength": 1, "maxLength": 120 },
+              "amount": { "$ref": "workspace-common-v1.schema.json#/$defs/money" },
+              "calculation": { "type": "string", "minLength": 1, "maxLength": 300 }
+            }
+          }
+        },
+        "total": { "$ref": "workspace-common-v1.schema.json#/$defs/money" }
+      }
+    },
+    "outcomes": {
+      "type": "object",
+      "additionalProperties": false,
+      "patternProperties": { "^x-": true },
+      "required": ["accepted", "rejected", "pendingCandidates", "commitsInPeriod", "commitsInAcceptedOutcomes", "linesInPeriod", "items", "pending", "corrections"],
+      "properties": {
+        "accepted": { "$ref": "workspace-common-v1.schema.json#/$defs/count" },
+        "rejected": { "$ref": "workspace-common-v1.schema.json#/$defs/count" },
+        "pendingCandidates": { "$ref": "workspace-common-v1.schema.json#/$defs/count" },
+        "commitsInPeriod": { "$ref": "workspace-common-v1.schema.json#/$defs/count" },
+        "commitsInAcceptedOutcomes": { "$ref": "workspace-common-v1.schema.json#/$defs/count" },
+        "linesInPeriod": { "$ref": "#/$defs/lines" },
+        "items": { "type": "array", "items": { "$ref": "#/$defs/outcomeItem" } },
+        "pending": { "type": "array", "maxItems": 50, "items": { "$ref": "#/$defs/candidateItem" } },
+        "corrections": { "type": "array", "items": { "$ref": "#/$defs/correctionItem" } }
+      }
+    },
+    "effort": {
+      "type": "object",
+      "additionalProperties": false,
+      "patternProperties": { "^x-": true },
+      "required": ["baseline", "rubricVersion", "hoursPerDay", "estimatedOutcomes", "unestimatedOutcomes"],
+      "properties": {
+        "baseline": { "$ref": "workspace-common-v1.schema.json#/$defs/workingBaseline" },
+        "rubricVersion": { "type": "string", "minLength": 1, "maxLength": 64 },
+        "hoursPerDay": { "$ref": "workspace-common-v1.schema.json#/$defs/nonNegativeDecimal" },
+        "estimatedOutcomes": { "$ref": "workspace-common-v1.schema.json#/$defs/count" },
+        "unestimatedOutcomes": { "$ref": "workspace-common-v1.schema.json#/$defs/count" },
+        "hours": { "$ref": "workspace-common-v1.schema.json#/$defs/estimateRange" },
+        "personDays": { "$ref": "workspace-common-v1.schema.json#/$defs/estimateRange" }
+      }
+    },
+    "economics": {
+      "type": "object",
+      "additionalProperties": false,
+      "patternProperties": { "^x-": true },
+      "required": ["state", "missing", "rate", "operatorRate"],
+      "properties": {
+        "state": { "enum": ["available", "partial", "unavailable"], "description": "partial: wage equivalent known, net benefit not. Missing inputs are listed, never filled in." },
+        "missing": { "type": "array", "items": { "enum": ["accepted_outcomes", "effort_estimates", "operator_time", "tooling_cost", "single_currency"] }, "uniqueItems": true },
+        "rate": { "$ref": "#/$defs/laborRate" },
+        "operatorRate": { "$ref": "#/$defs/laborRate" },
+        "grossLaborEquivalent": { "$ref": "workspace-common-v1.schema.json#/$defs/moneyRange" },
+        "operatorCost": { "$ref": "workspace-common-v1.schema.json#/$defs/moneyRange" },
+        "toolingCost": { "$ref": "workspace-common-v1.schema.json#/$defs/money" },
+        "netOpportunity": { "$ref": "workspace-common-v1.schema.json#/$defs/moneyRange", "description": "Gross minus operator cost minus tooling: low uses the highest operator time, high the lowest." },
+        "leverage": { "$ref": "workspace-common-v1.schema.json#/$defs/estimateRange", "description": "Estimated human hours divided by the person's hands-on hours." }
+      }
+    },
+    "friction": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "patternProperties": { "^x-": true },
+        "required": ["kind", "count", "detail", "evidence"],
+        "properties": {
+          "kind": { "enum": ["sessions_without_commits", "context_reread", "reverted_commits", "rejected_outcomes", "unlinked_commits"] },
+          "count": { "$ref": "workspace-common-v1.schema.json#/$defs/count" },
+          "tokens": { "$ref": "workspace-common-v1.schema.json#/$defs/tokenQuantity" },
+          "share": { "$ref": "workspace-common-v1.schema.json#/$defs/nonNegativeDecimal" },
+          "detail": { "type": "string", "minLength": 1, "maxLength": 400 },
+          "evidence": { "type": "array", "maxItems": 20, "items": { "type": "string", "minLength": 1, "maxLength": 512 } }
+        }
+      }
+    },
+    "uncertainty": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "patternProperties": { "^x-": true },
+        "required": ["code", "message"],
+        "properties": {
+          "code": { "type": "string", "pattern": "^[a-z][a-z0-9_]{0,63}$" },
+          "message": { "type": "string", "minLength": 1, "maxLength": 400 }
+        }
+      }
+    },
+    "nextPrompt": { "type": "string", "minLength": 1, "maxLength": 2000 },
+    "assumptions": { "$ref": "#/$defs/assumptions" }
+  },
+  "$defs": {
+    "lines": {
+      "type": "object",
+      "additionalProperties": false,
+      "patternProperties": { "^x-": true },
+      "required": ["additions", "deletions"],
+      "properties": {
+        "additions": { "$ref": "workspace-common-v1.schema.json#/$defs/count" },
+        "deletions": { "$ref": "workspace-common-v1.schema.json#/$defs/count" }
+      }
+    },
+    "projectRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "patternProperties": { "^x-": true },
+      "required": ["id", "name"],
+      "properties": {
+        "id": { "$ref": "workspace-common-v1.schema.json#/$defs/identifier" },
+        "name": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "path": { "type": "string", "pattern": "^/", "maxLength": 4096 }
+      }
+    },
+    "outcomeItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "patternProperties": { "^x-": true },
+      "required": ["outcomeID", "revisionID", "title", "deliveryStandard", "landedAt", "repositories", "commits", "sessions", "revertedCommits", "evidence", "operatorTime"],
+      "properties": {
+        "outcomeID": { "$ref": "workspace-common-v1.schema.json#/$defs/uuid" },
+        "revisionID": { "$ref": "workspace-common-v1.schema.json#/$defs/uuid" },
+        "title": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "summary": { "type": "string", "minLength": 1, "maxLength": 1200 },
+        "deliveryStandard": { "$ref": "workspace-common-v1.schema.json#/$defs/deliveryStandard" },
+        "landedAt": { "$ref": "workspace-common-v1.schema.json#/$defs/timestamp" },
+        "repositories": { "type": "array", "items": { "type": "string", "minLength": 1, "maxLength": 200 } },
+        "commits": { "$ref": "workspace-common-v1.schema.json#/$defs/count" },
+        "lines": { "$ref": "#/$defs/lines" },
+        "sessions": { "$ref": "workspace-common-v1.schema.json#/$defs/count" },
+        "revertedCommits": { "$ref": "workspace-common-v1.schema.json#/$defs/count", "description": "Evidence commits that a later commit in the last scan reverts: work that may not have stuck." },
+        "evidence": { "type": "array", "maxItems": 256, "items": { "$ref": "workspace-common-v1.schema.json#/$defs/outcomeEvidence" } },
+        "operatorTime": { "$ref": "workspace-common-v1.schema.json#/$defs/operatorTime" },
+        "effort": {
+          "type": "object",
+          "additionalProperties": false,
+          "patternProperties": { "^x-": true },
+          "required": ["baseline", "hours", "assessor", "assessmentID", "method", "confidence", "assessments", "spread", "disagreement", "stale"],
+          "properties": {
+            "baseline": { "$ref": "workspace-common-v1.schema.json#/$defs/workingBaseline" },
+            "hours": { "$ref": "workspace-common-v1.schema.json#/$defs/estimateRange" },
+            "assessor": { "$ref": "effort-assessment-v1.schema.json#/properties/assessor" },
+            "assessmentID": { "$ref": "workspace-common-v1.schema.json#/$defs/uuid" },
+            "method": { "enum": ["size_class", "task_breakdown", "comparable_work", "expert_judgment"] },
+            "sizeClass": { "enum": ["xs", "s", "m", "l", "xl"] },
+            "confidence": { "enum": ["low", "medium", "high"] },
+            "assessments": { "type": "integer", "minimum": 1 },
+            "spread": { "$ref": "workspace-common-v1.schema.json#/$defs/estimateRange" },
+            "disagreement": { "type": "boolean", "description": "Base estimates for the same outcome and baseline differ by more than half." },
+            "stale": { "type": "boolean", "description": "Assessed against an earlier revision of the outcome." }
+          },
+          "description": "The chosen estimate: the latest by a person, else the latest by a model. Others are counted in assessments and spread."
+        }
+      }
+    },
+    "candidateItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "patternProperties": { "^x-": true },
+      "required": ["candidateID", "title", "repositories", "commits", "lines", "sessions", "firstCommitAt", "lastCommitAt"],
+      "properties": {
+        "candidateID": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "title": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "repositories": { "type": "array", "items": { "type": "string", "minLength": 1, "maxLength": 200 } },
+        "commits": { "$ref": "workspace-common-v1.schema.json#/$defs/count" },
+        "lines": { "$ref": "#/$defs/lines" },
+        "sessions": { "$ref": "workspace-common-v1.schema.json#/$defs/count" },
+        "firstCommitAt": { "$ref": "workspace-common-v1.schema.json#/$defs/timestamp" },
+        "lastCommitAt": { "$ref": "workspace-common-v1.schema.json#/$defs/timestamp" }
+      }
+    },
+    "correctionItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "patternProperties": { "^x-": true },
+      "required": ["outcomeID", "title", "reason", "landedAt", "withdrawnAt"],
+      "properties": {
+        "outcomeID": { "$ref": "workspace-common-v1.schema.json#/$defs/uuid" },
+        "title": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "reason": { "enum": ["regression", "reverted", "duplicate", "scope_change", "other"] },
+        "landedAt": { "$ref": "workspace-common-v1.schema.json#/$defs/timestamp" },
+        "withdrawnAt": { "$ref": "workspace-common-v1.schema.json#/$defs/timestamp" }
+      }
+    },
+    "laborRate": {
+      "type": "object",
+      "additionalProperties": false,
+      "patternProperties": { "^x-": true },
+      "required": ["id", "label", "hourly", "vintage", "basis"],
+      "properties": {
+        "id": { "$ref": "workspace-common-v1.schema.json#/$defs/slug" },
+        "label": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "hourly": { "$ref": "workspace-common-v1.schema.json#/$defs/money" },
+        "vintage": { "type": "string", "minLength": 1, "maxLength": 40 },
+        "region": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "basis": { "enum": ["median_wage", "user_rate", "contractor_rate", "loaded_cost"], "description": "A wage benchmark is not a billing rate or a loaded employer cost." },
+        "derivation": { "type": "string", "minLength": 1, "maxLength": 300 },
+        "source": {
+          "type": "object",
+          "additionalProperties": false,
+          "patternProperties": { "^x-": true },
+          "required": ["publisher"],
+          "properties": {
+            "publisher": { "type": "string", "minLength": 1, "maxLength": 200 },
+            "url": { "type": "string", "pattern": "^https://", "maxLength": 500 },
+            "retrieved": { "type": "string", "minLength": 1, "maxLength": 40 }
+          }
+        }
+      }
+    },
+    "subscription": {
+      "type": "object",
+      "additionalProperties": false,
+      "patternProperties": { "^x-": true },
+      "required": ["id", "provider", "label", "monthly"],
+      "properties": {
+        "id": { "$ref": "workspace-common-v1.schema.json#/$defs/slug" },
+        "provider": { "$ref": "workspace-common-v1.schema.json#/$defs/providerSlug" },
+        "label": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "monthly": { "$ref": "workspace-common-v1.schema.json#/$defs/money" },
+        "from": { "$ref": "workspace-common-v1.schema.json#/$defs/timestamp" },
+        "to": { "$ref": "workspace-common-v1.schema.json#/$defs/timestamp" }
+      },
+      "description": "Spread over a report's days at 365.2425/12 days a month."
+    },
+    "assumptions": {
+      "type": "object",
+      "additionalProperties": false,
+      "patternProperties": { "^x-": true },
+      "required": ["baseline", "rateID", "customRates", "hoursPerDay", "timeZone", "subscriptions"],
+      "properties": {
+        "baseline": { "$ref": "workspace-common-v1.schema.json#/$defs/workingBaseline" },
+        "rateID": { "type": "string", "minLength": 1, "maxLength": 64 },
+        "operatorRateID": { "type": "string", "minLength": 1, "maxLength": 64 },
+        "customRates": { "type": "array", "maxItems": 32, "items": { "$ref": "#/$defs/laborRate" } },
+        "hoursPerDay": { "$ref": "workspace-common-v1.schema.json#/$defs/nonNegativeDecimal" },
+        "timeZone": { "type": "string", "minLength": 1, "maxLength": 64 },
+        "subscriptions": { "type": "array", "maxItems": 32, "items": { "$ref": "#/$defs/subscription" } }
+      }
+    },
+    "assumptionsRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "patternProperties": { "^x-": true },
+      "required": ["schemaVersion", "id", "revision", "createdAt", "assumptions"],
+      "properties": {
+        "schemaVersion": { "const": "economic-assumptions/1" },
+        "id": { "$ref": "workspace-common-v1.schema.json#/$defs/uuid" },
+        "revision": { "type": "integer", "minimum": 1, "maximum": 4096 },
+        "supersedesID": { "$ref": "workspace-common-v1.schema.json#/$defs/uuid" },
+        "createdAt": { "$ref": "workspace-common-v1.schema.json#/$defs/timestamp" },
+        "assumptions": { "$ref": "#/$defs/assumptions" }
+      }
+    },
+    "rubric": {
+      "type": "object",
+      "additionalProperties": false,
+      "patternProperties": { "^x-": true },
+      "required": ["version", "sizes", "standardFactors", "contemporaryFactors", "notes"],
+      "properties": {
+        "version": { "type": "string", "minLength": 1, "maxLength": 64 },
+        "sizes": {
+          "type": "array",
+          "minItems": 5,
+          "maxItems": 5,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "patternProperties": { "^x-": true },
+            "required": ["id", "title", "description", "hours"],
+            "properties": {
+              "id": { "enum": ["xs", "s", "m", "l", "xl"] },
+              "title": { "type": "string", "minLength": 1, "maxLength": 80 },
+              "description": { "type": "string", "minLength": 1, "maxLength": 400 },
+              "hours": { "$ref": "workspace-common-v1.schema.json#/$defs/estimateRange" }
+            }
+          }
+        },
+        "standardFactors": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["prototype", "internal_tool", "production"],
+          "properties": {
+            "prototype": { "$ref": "workspace-common-v1.schema.json#/$defs/nonNegativeDecimal" },
+            "internal_tool": { "$ref": "workspace-common-v1.schema.json#/$defs/nonNegativeDecimal" },
+            "production": { "$ref": "workspace-common-v1.schema.json#/$defs/nonNegativeDecimal" }
+          }
+        },
+        "contemporaryFactors": { "$ref": "workspace-common-v1.schema.json#/$defs/estimateRange" },
+        "notes": { "type": "array", "items": { "type": "string", "minLength": 1, "maxLength": 600 } }
+      }
+    },
+    "assumptionsBundle": {
+      "type": "object",
+      "additionalProperties": false,
+      "patternProperties": { "^x-": true },
+      "required": ["schemaVersion", "assumptions", "rates", "rubric", "formulas"],
+      "properties": {
+        "schemaVersion": { "const": "economic-assumptions-bundle/1" },
+        "assumptions": { "$ref": "#/$defs/assumptions" },
+        "rates": { "type": "array", "items": { "$ref": "#/$defs/laborRate" } },
+        "rubric": { "$ref": "#/$defs/rubric" },
+        "formulas": { "type": "array", "items": { "type": "string", "minLength": 1, "maxLength": 400 } }
+      }
+    }
+  }
+}

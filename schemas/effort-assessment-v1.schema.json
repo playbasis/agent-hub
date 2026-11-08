@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:playbasis:ai-agent-hub:effort-assessment:1",
+  "title": "Effort assessment",
+  "description": "One assessor's estimate of the human effort an accepted outcome represents, under one working baseline and delivery standard. Estimates come from delivered capabilities and integration complexity, not lines of code or token volume. Changing an estimate adds a record; the earlier one stays as calibration evidence. Assessments from different baselines are never averaged. confidence is the assessor's own; evidence coverage is reported separately.",
+  "type": "object",
+  "additionalProperties": false,
+  "patternProperties": { "^x-": true },
+  "required": ["schemaVersion", "id", "outcomeID", "outcomeRevisionID", "createdAt", "assessor", "baseline", "deliveryStandard", "method", "sizeClass", "hours", "components", "assumptions", "rationale", "confidence"],
+  "properties": {
+    "schemaVersion": { "const": "effort-assessment/1" },
+    "id": { "$ref": "workspace-common-v1.schema.json#/$defs/uuid" },
+    "outcomeID": { "$ref": "workspace-common-v1.schema.json#/$defs/uuid" },
+    "outcomeRevisionID": { "$ref": "workspace-common-v1.schema.json#/$defs/uuid", "description": "The outcome revision assessed. A later revision makes this assessment stale, not invalid." },
+    "createdAt": { "$ref": "workspace-common-v1.schema.json#/$defs/timestamp" },
+    "assessor": {
+      "type": "object",
+      "additionalProperties": false,
+      "patternProperties": { "^x-": true },
+      "required": ["kind", "identity", "rubricVersion"],
+      "properties": {
+        "kind": { "enum": ["human", "model"] },
+        "identity": { "type": "string", "minLength": 1, "maxLength": 128, "description": "user, or the model's exact identity. Never inferred from the agent being assessed." },
+        "rubricVersion": { "type": ["string", "null"], "minLength": 1, "maxLength": 64 }
+      },
+      "if": { "properties": { "kind": { "const": "model" } } },
+      "then": { "properties": { "rubricVersion": { "type": "string" } } }
+    },
+    "baseline": { "$ref": "workspace-common-v1.schema.json#/$defs/workingBaseline" },
+    "deliveryStandard": { "$ref": "workspace-common-v1.schema.json#/$defs/deliveryStandard" },
+    "method": { "enum": ["size_class", "task_breakdown", "comparable_work", "expert_judgment"] },
+    "sizeClass": { "enum": ["xs", "s", "m", "l", "xl", null] },
+    "hours": { "$ref": "workspace-common-v1.schema.json#/$defs/estimateRange", "description": "Estimated human hours; stored, so later rubric edits never rewrite them." },
+    "components": {
+      "type": ["array", "null"],
+      "minItems": 1,
+      "maxItems": 5,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "patternProperties": { "^x-": true },
+        "required": ["activity", "hours"],
+        "properties": {
+          "activity": { "enum": ["discovery", "implementation", "testing", "review", "integration"] },
+          "hours": { "$ref": "workspace-common-v1.schema.json#/$defs/nonNegativeDecimal" }
+        }
+      }
+    },
+    "assumptions": { "type": "array", "maxItems": 16, "items": { "type": "string", "minLength": 1, "maxLength": 300 } },
+    "rationale": { "type": ["string", "null"], "minLength": 1, "maxLength": 1200 },
+    "confidence": { "enum": ["low", "medium", "high"] }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "method": { "const": "size_class" } } },
+      "then": { "properties": { "sizeClass": { "type": "string" }, "assessor": { "properties": { "rubricVersion": { "type": "string" } } } } },
+      "else": { "properties": { "sizeClass": { "type": "null" } } }
+    }
+  ]
+}

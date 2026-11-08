@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://local.claude-codex-bridge/schemas/decision-1.0.json",
+  "title": "Decision",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "label",
+    "confidence",
+    "next_agent",
+    "action",
+    "refined_prompt",
+    "summary_for_log",
+    "reason"
+  ],
+  "properties": {
+    "schema_version": { "const": "1.0" },
+    "label": {
+      "enum": [
+        "architecture",
+        "implementation",
+        "debug",
+        "test",
+        "refactor",
+        "research",
+        "complete"
+      ]
+    },
+    "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+    "next_agent": { "enum": ["claude", "codex", "none"] },
+    "action": { "enum": ["continue", "handoff", "pause", "complete"] },
+    "refined_prompt": { "type": "string", "maxLength": 100000 },
+    "summary_for_log": { "type": "string", "minLength": 1, "maxLength": 10000 },
+    "reason": { "type": "string", "minLength": 1, "maxLength": 10000 }
+  }
+}
+

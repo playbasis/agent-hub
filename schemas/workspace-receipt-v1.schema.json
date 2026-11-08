@@ -1,0 +1,94 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:playbasis:ai-agent-hub:workspace-receipt:1",
+  "title": "Workspace receipt",
+  "description": "One observation of agent work from a native collector or an imported evidence bundle. eventID is the logical identity; revision is the observation revision (a higher revision with different content supersedes a lower one); contentDigest is sha256 over RFC 8785 canonical JSON of the receipt without revision, observedAt, contentDigest and x- fields, so a replayed observation is recognised and never counted twice. Receipts carry no prompts, tool payloads, reasoning text or credentials.",
+  "type": "object",
+  "additionalProperties": false,
+  "patternProperties": { "^x-": true },
+  "required": ["schemaVersion", "eventID", "revision", "contentDigest", "observedAt", "producer", "provider", "sessionID", "nativeTurnID", "unit", "accumulation", "scope", "time", "model", "effort", "usage", "aggregates", "projectPath", "includedInTotals", "evidence"],
+  "properties": {
+    "schemaVersion": { "const": "workspace-receipt/1" },
+    "eventID": { "$ref": "workspace-common-v1.schema.json#/$defs/identifier", "description": "Stable logical identity, namespaced by the producer (for example agent-hub:codex:<session>:<turn>:<step>)." },
+    "revision": { "type": "integer", "minimum": 1, "maximum": 1000000 },
+    "contentDigest": { "$ref": "workspace-common-v1.schema.json#/$defs/digest" },
+    "observedAt": { "$ref": "workspace-common-v1.schema.json#/$defs/timestamp", "description": "When the producer read the evidence, not when the work happened." },
+    "producer": {
+      "type": "object",
+      "additionalProperties": false,
+      "patternProperties": { "^x-": true },
+      "required": ["adapter", "adapterVersion"],
+      "properties": {
+        "adapter": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "adapterVersion": { "type": "string", "minLength": 1, "maxLength": 64 }
+      }
+    },
+    "provider": { "$ref": "workspace-common-v1.schema.json#/$defs/providerSlug" },
+    "sessionID": { "$ref": "workspace-common-v1.schema.json#/$defs/identifier" },
+    "nativeTurnID": { "$ref": "workspace-common-v1.schema.json#/$defs/nullableIdentifier" },
+    "unit": {
+      "enum": ["model_step", "conversation_turn", "request_attempt", "session"],
+      "description": "What one receipt represents. Model steps, conversation turns and request attempts are different units and are never counted as each other."
+    },
+    "accumulation": {
+      "enum": ["incremental", "cumulative"],
+      "description": "Cumulative receipts are running totals for the session's series of this unit; readers difference consecutive checkpoints ordered by time.at, starting from zero. A decrease starts a new series."
+    },
+    "scope": {
+      "enum": ["local_native_history", "provider_account", "provider_plan_window", "native_goal", "bridge_session", "direct_provider_response", "repository_history"],
+      "description": "The population measured. Different scopes are never added together."
+    },
+    "time": {
+      "type": "object",
+      "additionalProperties": false,
+      "patternProperties": { "^x-": true },
+      "required": ["basis", "at", "start", "end"],
+      "properties": {
+        "basis": { "enum": ["provider_event", "native_interval", "unplaced"] },
+        "at": { "$ref": "workspace-common-v1.schema.json#/$defs/nullableTimestamp" },
+        "start": { "$ref": "workspace-common-v1.schema.json#/$defs/nullableTimestamp" },
+        "end": { "$ref": "workspace-common-v1.schema.json#/$defs/nullableTimestamp" }
+      },
+      "allOf": [
+        { "if": { "properties": { "basis": { "const": "provider_event" } } }, "then": { "properties": { "at": { "type": "string" } } } },
+        { "if": { "properties": { "basis": { "const": "unplaced" } } }, "then": { "properties": { "at": { "type": "null" } } } }
+      ],
+      "description": "Windowing uses at, else end, else start. Unplaced usage stays in the ledger but outside windowed totals."
+    },
+    "model": { "type": ["string", "null"], "minLength": 1, "maxLength": 256, "description": "Raw recorded model identity; null when not recorded, never filled from configuration." },
+    "effort": { "type": ["string", "null"], "minLength": 1, "maxLength": 64 },
+    "usage": {
+      "type": "object",
+      "additionalProperties": false,
+      "patternProperties": { "^x-": true },
+      "required": ["input", "cachedInput", "cacheWriteInput", "output", "reasoning", "total", "inputIncludesCachedInput", "provenance", "completeness"],
+      "properties": {
+        "input": { "$ref": "workspace-common-v1.schema.json#/$defs/nullableTokenQuantity" },
+        "cachedInput": { "$ref": "workspace-common-v1.schema.json#/$defs/nullableTokenQuantity" },
+        "cacheWriteInput": { "$ref": "workspace-common-v1.schema.json#/$defs/nullableTokenQuantity" },
+        "output": { "$ref": "workspace-common-v1.schema.json#/$defs/nullableTokenQuantity" },
+        "reasoning": { "$ref": "workspace-common-v1.schema.json#/$defs/nullableTokenQuantity" },
+        "total": { "$ref": "workspace-common-v1.schema.json#/$defs/nullableTokenQuantity" },
+        "inputIncludesCachedInput": { "type": ["boolean", "null"], "description": "The provider's input convention: Codex includes cache reads in input, Claude does not. Null when unknown." },
+        "provenance": { "enum": ["provider_reported", "derived", "estimated", "unavailable"], "description": "Only provider_reported and derived values enter known totals." },
+        "completeness": { "enum": ["complete", "partial", "unknown"] }
+      },
+      "description": "total and output are the canonical sums. cachedInput and reasoning are subsets and are never added again."
+    },
+    "aggregates": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "patternProperties": { "^x-": true },
+      "required": ["toolCalls", "submittedPrompts", "confirmedHumanPrompts"],
+      "properties": {
+        "toolCalls": { "$ref": "workspace-common-v1.schema.json#/$defs/nullableCount" },
+        "submittedPrompts": { "$ref": "workspace-common-v1.schema.json#/$defs/nullableCount" },
+        "confirmedHumanPrompts": { "$ref": "workspace-common-v1.schema.json#/$defs/nullableCount" }
+      },
+      "description": "Counts for the whole unit. Aggregates are never expanded into individual tool executions or prompts."
+    },
+    "projectPath": { "type": ["string", "null"], "pattern": "^/", "maxLength": 4096 },
+    "includedInTotals": { "type": "boolean" },
+    "evidence": { "type": "string", "minLength": 1, "maxLength": 128 }
+  }
+}

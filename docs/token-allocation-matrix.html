@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Token Allocation — Policy Matrix Explorer</title>
+<style>
+/* ============================================================
+   Palette: validated against the dataviz reference instance.
+   Diverging arms (surplus/deficit) and the categorical line
+   slots were each run through validate_palette.js in both
+   modes; see the "Palette" note in the footer.
+   ============================================================ */
+.viz-root {
+  color-scheme: light;
+  --surface-1:      #fcfcfb;
+  --plane:          #f9f9f7;
+  --text-primary:   #0b0b0b;
+  --text-secondary: #52514e;
+  --muted:          #898781;
+  --grid-line:      #e1e0d9;
+  --axis:           #c3c2b7;
+  --hairline:       rgba(11,11,11,0.10);
+
+  /* diverging: deficit (red) ← neutral → surplus (blue) */
+  --dv-n4: #8f2322; --dv-n3: #c02f2e; --dv-n2: #e34948; --dv-n1: #ef8b89;
+  --dv-0:  #f0efec;
+  --dv-p1: #86b6ef; --dv-p2: #5598e7; --dv-p3: #2a78d6; --dv-p4: #184f95;
+
+  /* categorical slots 1–3 (trajectory lines) */
+  --series-1: #2a78d6; --series-2: #eb6834; --series-3: #1baf7a;
+
+  /* status — fixed, never themed; always icon + label */
+  --good: #0ca30c; --critical: #d03b3b; --warning: #fab219;
+}
+:root[data-theme="dark"] .viz-root {
+  color-scheme: dark;
+  --surface-1:      #1a1a19;
+  --plane:          #0d0d0d;
+  --text-primary:   #ffffff;
+  --text-secondary: #c3c2b7;
+  --muted:          #898781;
+  --grid-line:      #2c2c2a;
+  --axis:           #383835;
+  --hairline:       rgba(255,255,255,0.10);
+
+  --dv-n4: #f39492; --dv-n3: #e26160; --dv-n2: #c53c3b; --dv-n1: #99302f;
+  --dv-0:  #383835;
+  --dv-p1: #184f95; --dv-p2: #256abf; --dv-p3: #3987e5; --dv-p4: #6da7ec;
+
+  --series-1: #3987e5; --series-2: #d95926; --series-3: #199e70;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  background: var(--plane);
+  color: var(--text-primary);
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+}
+.viz-root { max-width: 1240px; margin: 0 auto; padding: 28px 24px 64px; }
+
+h1 { font-size: 22px; font-weight: 650; letter-spacing: -0.01em; margin: 0 0 4px; }
+h2 { font-size: 15px; font-weight: 620; margin: 0 0 2px; letter-spacing: -0.005em; }
+.sub { color: var(--text-secondary); font-size: 13px; margin: 0; }
+.lede { color: var(--text-secondary); max-width: 74ch; margin: 0 0 22px; }
+
+/* ---------- enterprise decision factory (visual bridge to the policy/eval work) ---------- */
+.factory { overflow: hidden; padding: 0; }
+.factory figure { margin: 0; background: #101110; }
+.factory img { display: block; width: 100%; height: auto; aspect-ratio: 1672 / 941; object-fit: cover; }
+.factory-body { padding: 18px 20px 20px; }
+.factory-kicker { color: var(--series-1); font-size: 11px; font-weight: 700; letter-spacing: .075em; text-transform: uppercase; }
+.factory-head { display: flex; gap: 20px; justify-content: space-between; align-items: end; margin-bottom: 14px; }
+.factory-head h2 { font-size: 18px; margin-top: 2px; }
+.factory-head p { color: var(--text-secondary); max-width: 58ch; font-size: 12.5px; margin: 0; }
+.factory-flow { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; margin: 0 0 14px; }
+.factory-flow div { min-height: 58px; padding: 9px 10px; background: var(--plane); border: 1px solid var(--hairline); border-radius: 9px; }
+.factory-flow b { display: block; color: var(--text-primary); font-size: 11.5px; margin-bottom: 2px; }
+.factory-flow span { color: var(--text-secondary); font-size: 11px; line-height: 1.25; }
+.model-roles { display: flex; flex-wrap: wrap; gap: 6px; }
+.model-role { border: 1px solid var(--hairline); border-radius: 999px; color: var(--text-secondary); font-size: 11.5px; padding: 4px 8px; }
+.model-role strong { color: var(--text-primary); font-weight: 650; }
+.factory details { margin-top: 14px; }
+.factory summary { color: var(--text-secondary); cursor: pointer; font-size: 12.5px; }
+.factory details p { color: var(--text-secondary); font-size: 12px; line-height: 1.5; margin: 8px 0 0; max-width: 90ch; }
+@media (max-width: 760px) {
+  .factory-head { display: block; }
+  .factory-head p { margin-top: 7px; }
+  .factory-flow { grid-template-columns: 1fr 1fr; }
+  .factory-flow div:last-child { grid-column: 1 / -1; }
+}
+
+.card {
+  background: var(--surface-1);
+  border: 1px solid var(--hairline);
+  border-radius: 12px;
+  padding: 18px 20px 20px;
+  margin-bottom: 18px;
+}
+.card-head { margin-bottom: 14px; }
+.readout {
+  display: inline-block; margin-left: 8px; padding: 2px 9px; border-radius: 999px;
+  border: 1px solid var(--hairline); background: var(--plane);
+  font-size: 12.5px; font-weight: 600; font-variant-numeric: tabular-nums;
+  color: var(--text-primary); vertical-align: 1px;
+}
+
+/* ---------- control row (one row, above everything it scopes) ---------- */
+.controls { display: grid; grid-template-columns: 1fr 1fr auto; gap: 22px; align-items: start; }
+@media (max-width: 900px) { .controls { grid-template-columns: 1fr; } }
+fieldset { border: 1px solid var(--hairline); border-radius: 10px; padding: 12px 14px 14px; margin: 0; }
+legend { font-size: 12px; font-weight: 620; color: var(--text-secondary); padding: 0 6px; }
+.field { display: grid; grid-template-columns: 1fr auto; align-items: baseline; gap: 8px; margin-top: 10px; }
+.field:first-of-type { margin-top: 2px; }
+.field label { font-size: 12.5px; color: var(--text-secondary); }
+.field output { font-size: 12.5px; font-variant-numeric: tabular-nums; color: var(--text-primary); font-weight: 600; }
+input[type=range] { grid-column: 1 / -1; width: 100%; accent-color: var(--series-1); margin: 2px 0 0; height: 20px; }
+.seg { display: flex; gap: 4px; margin-top: 6px; }
+.seg button {
+  flex: 1; font: inherit; font-size: 12px; padding: 5px 8px; cursor: pointer;
+  background: transparent; color: var(--text-secondary);
+  border: 1px solid var(--hairline); border-radius: 7px;
+}
+.seg button[aria-pressed="true"] { background: var(--series-1); border-color: var(--series-1); color: #fff; font-weight: 600; }
+.linkish {
+  font: inherit; font-size: 12.5px; background: none; border: 1px solid var(--hairline);
+  border-radius: 7px; padding: 6px 11px; color: var(--text-secondary); cursor: pointer;
+}
+.linkish:hover { color: var(--text-primary); }
+
+/* ---------- verdict (hero readout — a stat tile, not a chart) ---------- */
+.verdict { display: grid; grid-template-columns: minmax(260px, 1.1fr) 1fr 1fr; gap: 20px; align-items: center; }
+@media (max-width: 900px) { .verdict { grid-template-columns: 1fr; } }
+.verdict-main .kicker { font-size: 11.5px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.verdict-main .headline { font-size: 27px; font-weight: 650; letter-spacing: -0.02em; line-height: 1.15; margin: 2px 0 4px; }
+.verdict-main .detail { color: var(--text-secondary); font-size: 13px; }
+.pstate { border-left: 3px solid var(--axis); padding-left: 12px; }
+.pstate .pname { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+.pstate .pmode { font-size: 17px; font-weight: 620; margin: 1px 0 2px; }
+.pstate .pmeta { font-size: 12.5px; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+
+/* ---------- policy grid ---------- */
+.grids { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+@media (max-width: 900px) { .grids { grid-template-columns: 1fr; } }
+.gridwrap { display: grid; grid-template-columns: auto 1fr; gap: 6px; }
+.ylab {
+  writing-mode: vertical-rl; transform: rotate(180deg);
+  font-size: 11.5px; color: var(--muted); text-align: center; align-self: center;
+}
+.matrix { display: grid; grid-template-columns: auto repeat(5, 1fr); gap: 2px; }
+.matrix .rh, .matrix .ch {
+  font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums;
+  display: flex; align-items: center; justify-content: center; padding: 2px;
+}
+.matrix .rh { justify-content: flex-end; padding-right: 6px; white-space: nowrap; }
+.cell {
+  position: relative; border: 0; border-radius: 4px; padding: 0;
+  aspect-ratio: 1 / 0.72; min-height: 46px; cursor: pointer;
+  font: inherit; font-size: 10.5px; font-weight: 600; letter-spacing: -0.01em;
+  display: flex; align-items: center; justify-content: center; text-align: center;
+  line-height: 1.15;
+}
+.cell:focus-visible { outline: 2px solid var(--text-primary); outline-offset: 2px; }
+.cell.active::after {
+  content: ""; position: absolute; inset: -3px; border-radius: 6px;
+  border: 2.5px solid var(--text-primary); pointer-events: none;
+}
+.xlab { grid-column: 2 / -1; text-align: center; font-size: 11.5px; color: var(--muted); margin-top: 3px; }
+
+/* diverging scale legend */
+.scale { display: flex; align-items: center; gap: 8px; margin-top: 14px; font-size: 11.5px; color: var(--text-secondary); }
+.scale .swatches { display: flex; gap: 2px; }
+.scale .sw { width: 20px; height: 11px; border-radius: 2px; }
+
+/* mode legend table */
+.modes { width: 100%; border-collapse: collapse; margin-top: 6px; font-size: 12.5px; }
+.modes th, .modes td { text-align: left; padding: 6px 10px 6px 0; border-bottom: 1px solid var(--grid-line); vertical-align: top; }
+.modes th { color: var(--muted); font-weight: 600; font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.04em; }
+.modes td.rho { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.chip { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 7px; vertical-align: -1px; }
+
+/* ---------- svg charts ---------- */
+svg { display: block; width: 100%; height: auto; overflow: visible; }
+.axis-line { stroke: var(--axis); stroke-width: 1; }
+.grid-line { stroke: var(--grid-line); stroke-width: 1; }
+.tick { font-size: 11px; fill: var(--muted); font-variant-numeric: tabular-nums; }
+.axis-title { font-size: 11.5px; fill: var(--text-secondary); }
+.pt-label { font-size: 11px; fill: var(--text-secondary); }
+.legend { display: flex; flex-wrap: wrap; gap: 18px; margin-top: 12px; font-size: 12.5px; color: var(--text-secondary); }
+.legend span.key { display: inline-flex; align-items: center; gap: 6px; flex: 0 0 auto; white-space: nowrap; }
+.legend .line-key { width: 16px; height: 2px; border-radius: 1px; }
+
+/* tooltip */
+#tip {
+  position: fixed; z-index: 50; pointer-events: none; opacity: 0;
+  background: var(--surface-1); color: var(--text-primary);
+  border: 1px solid var(--hairline); border-radius: 8px;
+  padding: 9px 11px; font-size: 12.5px; max-width: 280px;
+  box-shadow: 0 8px 26px rgba(0,0,0,0.28);
+  transition: opacity .12s ease;
+}
+#tip strong { display: block; font-size: 13px; margin-bottom: 2px; }
+#tip .t-meta { color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+
+/* table view */
+table.data { width: 100%; border-collapse: collapse; font-size: 12.5px; font-variant-numeric: tabular-nums; }
+table.data th, table.data td { text-align: left; padding: 6px 10px 6px 0; border-bottom: 1px solid var(--grid-line); }
+table.data th { color: var(--muted); font-weight: 600; font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.04em; }
+table.data td.name { font-variant-numeric: normal; }
+details.tableview { margin-top: 14px; }
+details.tableview summary { cursor: pointer; font-size: 12.5px; color: var(--text-secondary); }
+footer { color: var(--muted); font-size: 12px; margin-top: 30px; line-height: 1.65; }
+footer a, .lede a { color: var(--series-1); }
+.vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="viz-root">
+
+  <h1>Token allocation — policy matrix explorer</h1>
+  <p class="lede">
+    The reservation price <strong>ρ</strong> is a scalar field over <em>budget remaining × time to reset</em>.
+    Move the sliders: each provider's cell picks a spending mode, the mode sets ρ, and ρ rotates the
+    admissibility line on the action plane below. Companion to
+    <a href="TOKEN-ALLOCATION-STRATEGY.md">TOKEN-ALLOCATION-STRATEGY.md</a> §4.1–4.2.
+  </p>
+
+  <!-- ============ ENTERPRISE DECISION FACTORY ============ -->
+  <section class="card factory" aria-labelledby="factory-title">
+    <figure>
+      <img src="assets/enterprise-decision-factory-orchestration-v2.png" alt="Eight-stage multi-model enterprise decision factory. Gemini routes the case; Luna, Sonnet, Terra, and Grok run a parallel evidence swarm; an auditable evidence ledger feeds an Opus tribunal, Sol policy simulation, Fable executive synthesis, Gemini governance gate, and final human decision. An evaluation loop returns from governance to intake.">
+    </figure>
+    <div class="factory-body">
+      <div class="factory-head">
+        <div>
+          <div class="factory-kicker">Visual operating model</div>
+          <h2 id="factory-title">Enterprise decision factory — evaluated, not merely automated</h2>
+        </div>
+        <p>For a strategic supplier award, acquisition screen, or operating-model decision: every model contributes a bounded evidence artifact; no model can approve an irreversible action.</p>
+      </div>
+      <div class="factory-flow" aria-label="Enterprise decision factory stages">
+        <div><b>1 · Intake</b><span>Case graph, permissions, and evidence schema</span></div>
+        <div><b>2 · Swarm</b><span>Extract facts and run specialist diligence pods</span></div>
+        <div><b>3 · Tribunal</b><span>Resolve contradictions and reject weak claims</span></div>
+        <div><b>4 · Simulate</b><span>Compare award, defer, dual-source, and renegotiate</span></div>
+        <div><b>5 · Govern</b><span>Executive packet, approval gate, and audit trail</span></div>
+      </div>
+      <div class="model-roles" aria-label="Model roles in the enterprise decision factory">
+        <span class="model-role"><strong>Gemini 3.7 Flash</strong> intake + governance</span>
+        <span class="model-role"><strong>GPT-5.6 Luna</strong> document swarm</span>
+        <span class="model-role"><strong>Sonnet 5</strong> diligence pods</span>
+        <span class="model-role"><strong>GPT-5.6 Terra</strong> scenarios</span>
+        <span class="model-role"><strong>Grok 4.5 / 4.6</strong> contrary signals</span>
+        <span class="model-role"><strong>Opus 5</strong> evidence tribunal</span>
+        <span class="model-role"><strong>GPT-5.6 Sol</strong> policy simulation</span>
+        <span class="model-role"><strong>Fable 5</strong> executive case captain</span>
+      </div>
+      <details>
+        <summary>How this connects to the policy matrix and eval loop</summary>
+        <p>The ρ policy below chooses the operating shape: <strong>DEEP</strong> reserves Fable, Opus, and Sol for difficult synthesis; <strong>BREADTH</strong> expands Luna and Sonnet evidence workers; <strong>CONSERVE</strong> keeps work to low-cost intake and extraction; <strong>SPEND-DOWN</strong> runs independent review and scenario sweeps. Each run should record quality, cost, latency, rework, and unresolved-risk scores so the next routing policy is empirically selected rather than assumed.</p>
+      </details>
+    </div>
+  </section>
+
+  <!-- ============ CONTROLS (one row, scopes everything below) ============ -->
+  <section class="card" aria-label="Controls">
+    <div class="controls">
+      <fieldset>
+        <legend>Claude · 5-hour session window</legend>
+        <div class="field"><label for="cb">Budget remaining</label><output id="cbo">72%</output>
+          <input type="range" id="cb" min="0" max="100" step="1" value="72"></div>
+        <div class="field"><label for="ct">Time to reset</label><output id="cto">3.4 h</output>
+          <input type="range" id="ct" min="0" max="300" step="5" value="204"></div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Codex · 5-hour shared pool</legend>
+        <div class="field"><label for="xb">Budget remaining</label><output id="xbo">38%</output>
+          <input type="range" id="xb" min="0" max="100" step="1" value="38"></div>
+        <div class="field"><label for="xt">Time to reset</label><output id="xto">1.6 h</output>
+          <input type="range" id="xt" min="0" max="300" step="5" value="96"></div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Weekly pace</legend>
+        <div class="seg" role="group" aria-label="Weekly pace modifier">
+          <button type="button" data-pace="-1" aria-pressed="false">Under</button>
+          <button type="button" data-pace="0" aria-pressed="true">On</button>
+          <button type="button" data-pace="1" aria-pressed="false">Over</button>
+        </div>
+        <p class="sub" style="font-size:11.5px;margin-top:9px;max-width:22ch">
+          Shifts the grid one row: over pace reads tighter, under pace looser.
+        </p>
+        <button class="linkish" id="theme" type="button" style="margin-top:10px">Light mode</button>
+      </fieldset>
+    </div>
+  </section>
+
+  <!-- ============ VERDICT ============ -->
+  <section class="card" aria-live="polite" aria-label="Routing verdict">
+    <div class="verdict">
+      <div class="verdict-main">
+        <div class="kicker">Route next turn</div>
+        <div class="headline" id="v-headline">—</div>
+        <div class="detail" id="v-detail">—</div>
+      </div>
+      <div class="pstate" id="v-claude">
+        <div class="pname">Claude</div><div class="pmode">—</div><div class="pmeta">—</div>
+      </div>
+      <div class="pstate" id="v-codex">
+        <div class="pname">Codex</div><div class="pmode">—</div><div class="pmeta">—</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ POLICY GRIDS ============ -->
+  <section class="card" id="grids">
+    <div class="card-head">
+      <h2>Policy grid — budget remaining × time to reset</h2>
+      <p class="sub">Fill encodes <em>surplus</em> (budget bucket − time bucket): the diagonal is on-pace, above it is surplus, below is deficit. The label names the mode. Click any cell to jump there.</p>
+    </div>
+    <div class="grids">
+      <div>
+        <h3 style="font-size:13px;margin:0 0 8px;font-weight:620">Claude</h3>
+        <div class="gridwrap">
+          <div class="ylab">budget remaining</div>
+          <div><div class="matrix" id="grid-claude"></div><div class="xlab">time to reset</div></div>
+        </div>
+      </div>
+      <div>
+        <h3 style="font-size:13px;margin:0 0 8px;font-weight:620">Codex</h3>
+        <div class="gridwrap">
+          <div class="ylab">budget remaining</div>
+          <div><div class="matrix" id="grid-codex"></div><div class="xlab">time to reset</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="scale">
+      <span>deficit — conserve</span>
+      <span class="swatches" id="scale-sw" aria-hidden="true"></span>
+      <span>surplus — spend</span>
+      <span style="margin-left:auto;color:var(--muted)">neutral = on pace</span>
+    </div>
+
+    <table class="modes">
+      <thead><tr><th>Mode</th><th>ρ</th><th>Meaning</th><th>Effort &amp; actions</th></tr></thead>
+      <tbody id="mode-legend"></tbody>
+    </table>
+
+    <details class="tableview">
+      <summary>Table view — policy grid</summary>
+      <table class="data" id="grid-table"></table>
+    </details>
+  </section>
+
+  <!-- ============ ACTION PLANE ============ -->
+  <section class="card" id="plane">
+    <div class="card-head">
+      <h2>Action plane — value vs token cost, gated by ρ <span id="rho-readout" class="readout">ρ = 0.70</span></h2>
+      <p class="sub">The gate <code>U = value / cost ≥ ρ</code> is a line through the origin with slope ρ. It rotates down as a window empties (admitting the lower right) and up when the ledger tightens.</p>
+    </div>
+    <svg id="quadrant" viewBox="0 0 760 470" role="img" aria-labelledby="q-title">
+      <title id="q-title">Actions plotted by token cost and verified value, with the current admissibility line</title>
+    </svg>
+    <div class="legend">
+      <span class="key"><svg width="13" height="13" aria-hidden="true"><circle cx="6.5" cy="6.5" r="5" fill="var(--good)"/></svg> Admitted at current ρ</span>
+      <span class="key"><svg width="13" height="13" aria-hidden="true"><circle cx="6.5" cy="6.5" r="5" fill="none" stroke="var(--muted)" stroke-width="1.5"/></svg> Deferred — below the line</span>
+      <span class="key"><svg width="13" height="13" aria-hidden="true"><path d="M3 3l7.5 7.5M10.5 3L3 10.5" stroke="var(--critical)" stroke-width="2" stroke-linecap="round"/></svg> Documented waste — never</span>
+    </div>
+    <details class="tableview">
+      <summary>Table view — actions</summary>
+      <table class="data" id="action-table"></table>
+    </details>
+  </section>
+
+  <!-- ============ TRAJECTORIES ============ -->
+  <section class="card" id="trajectories">
+    <div class="card-head">
+      <h2>Session trajectories through the grid</h2>
+      <p class="sub">Three canonical paths across one 5-hour window. The marker shows the current Claude state.</p>
+    </div>
+    <svg id="traj" viewBox="0 0 760 330" role="img" aria-labelledby="t-title">
+      <title id="t-title">Budget remaining over hours into the window for three session strategies</title>
+    </svg>
+    <div class="legend" id="traj-legend"></div>
+    <details class="tableview">
+      <summary>Table view — trajectories</summary>
+      <table class="data" id="traj-table"></table>
+    </details>
+  </section>
+
+  <footer>
+    <strong>Policy function.</strong> All 25 cells per grid are generated from seven ordered rules, not hand-authored —
+    the table in §4.1 of the strategy doc is this function's output.
+    <br><strong>Palette.</strong> Diverging arms and the three line slots were validated with the dataviz
+    <code>validate_palette.js</code> in both modes (ordinal ramp checks per arm; all-pairs CVD for the lines).
+    Mode identity is always carried by a text label, never by fill alone; every chart has a table-view twin.
+    <br><strong>Grounding.</strong> Window mechanics, effort tiers and the anti-lever list come from current
+    Anthropic and OpenAI documentation, cited per claim in the strategy doc.
+  </footer>
+</div>
+
+<div id="tip" role="status" aria-live="polite"></div>
+
+<script>
+"use strict";
+
+/* ============================================================
+   1. THE POLICY FUNCTION
+   Seven ordered rules over B (budget bucket 4→0, top to bottom)
+   and T (time bucket 4→0, left to right). d = B − T is surplus.
+   ============================================================ */
+const MODES = {
+  DEEP:      { label: "DEEP",       rho: 0.55,     meaning: "Fresh window, full budget — buy depth",       action: "xhigh · premium plan / architecture" },
+  STEADY:    { label: "STEADY",     rho: 0.70,     meaning: "On pace",                                     action: "medium–high · evaluator–optimizer loops" },
+  BREADTH:   { label: "BREADTH",    rho: 0.45,     meaning: "Ahead of pace — spend via parallelism",       action: "low per agent · subagent fan-out, review" },
+  SPENDDOWN: { label: "SPEND-DOWN", rho: 0.15,     meaning: "Expiring with surplus — ρ → 0",               action: "breadth not depth · best-of-N, sweeps" },
+  CONSERVE:  { label: "CONSERVE",   rho: 1.40,     meaning: "Behind pace — deficit",                       action: "low · cheap tier only, defer, shift provider" },
+  LAND:      { label: "LAND",       rho: 0.90,     meaning: "Nearly spent — land the plane",               action: "low · small safe verified units, commit" },
+  PARK:      { label: "PARK",       rho: Infinity, meaning: "No meaningful budget",                        action: "— · wait for reset, route elsewhere" },
+};
+
+function policyMode(B, T) {
+  const d = B - T;
+  if (B === 0 && T >= 3) return "PARK";
+  if (B <= 1 && T === 0) return "LAND";
+  if (B === 4 && T >= 3) return "DEEP";
+  if (d >= 3 || (T === 0 && d >= 2)) return "SPENDDOWN";
+  if (d >= 1 && B >= 2) return "BREADTH";
+  if (d <= -2 || (d === -1 && B <= 1)) return "CONSERVE";
+  return "STEADY";
+}
+
+// Bucket edges. Budget: index 4 = 100–80%. Time: index 4 = 5–4h remaining.
+const budgetBucket = pct => Math.min(4, Math.max(0, Math.ceil(pct / 20) - 1 + (pct === 0 ? 1 : 0)));
+const timeBucket   = min => Math.min(4, Math.max(0, Math.ceil(min / 60) - 1 + (min === 0 ? 1 : 0)));
+const ROW_LABELS = ["20–0%", "40–20%", "60–40%", "80–60%", "100–80%"];   // index 0..4
+const COL_LABELS = ["<1 h", "2–1 h", "3–2 h", "4–3 h", "5–4 h"];         // index 0..4
+
+/* ============================================================
+   2. ACTION PORTFOLIO (§4.2) — cost, verified value, waste flag
+   ============================================================ */
+const ACTIONS = [
+  { name: "Verifier subagents",       cost: 0.20, value: 0.80 },
+  { name: "Adversarial review",       cost: 0.35, value: 0.85 },
+  { name: "Implement loop, medium",   cost: 0.45, value: 0.68 },
+  { name: "Research fan-out, low",    cost: 0.27, value: 0.58 },
+  { name: "Plan at xhigh",            cost: 0.70, value: 0.90 },
+  { name: "Best-of-4 cloud attempts", cost: 0.75, value: 0.60 },
+  { name: "Max-burn frontier turn",   cost: 0.90, value: 0.72 },
+  { name: "Docs and changelog",       cost: 0.15, value: 0.25 },
+  { name: "Compact of a large context", cost: 0.55, value: 0.20, waste: true },
+  { name: "Fast mode, 2.5× burn",     cost: 0.80, value: 0.30, waste: true },
+  { name: "Max effort by default",    cost: 0.95, value: 0.35, waste: true },
+];
+
+/* ============================================================
+   3. STATE
+   ============================================================ */
+const state = { claude: { pct: 72, min: 204 }, codex: { pct: 38, min: 96 }, pace: 0 };
+const $ = id => document.getElementById(id);
+const clamp04 = n => Math.min(4, Math.max(0, n));
+
+// Weekly pace shifts the effective budget row: over pace reads one row tighter.
+const effRow = B => clamp04(B - state.pace);
+
+function providerState(p) {
+  const B = budgetBucket(p.pct), T = timeBucket(p.min);
+  const Be = effRow(B);
+  const key = policyMode(Be, T);
+  return { B, T, Be, key, mode: MODES[key], d: Be - T };
+}
+
+/* ============================================================
+   4. COLOR — diverging fill by surplus d ∈ [−4, +4]
+   ============================================================ */
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim() ||
+                 getComputedStyle(document.querySelector(".viz-root")).getPropertyValue(n).trim();
+const fillFor = d => css(d === 0 ? "--dv-0" : (d > 0 ? "--dv-p" : "--dv-n") + Math.abs(d));
+
+const srgb = c => { c /= 255; return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); };
+function relLum(hex) {
+  const h = hex.replace("#", "");
+  const n = h.length === 3 ? h.split("").map(x => x + x).join("") : h;
+  const [r, g, b] = [0, 2, 4].map(i => parseInt(n.slice(i, i + 2), 16));
+  return 0.2126 * srgb(r) + 0.7152 * srgb(g) + 0.0722 * srgb(b);
+}
+const contrast = (a, b) => { const [hi, lo] = [relLum(a), relLum(b)].sort((x, y) => y - x); return (hi + 0.05) / (lo + 0.05); };
+// Text on a heatmap cell: computed, not eyeballed — pick whichever ink wins.
+const inkOn = fill => contrast(fill, "#ffffff") >= contrast(fill, "#0b0b0b") ? "#ffffff" : "#0b0b0b";
+
+/* ============================================================
+   5. TOOLTIP
+   ============================================================ */
+const tip = $("tip");
+function showTip(evt, html) {
+  tip.innerHTML = html;
+  tip.style.opacity = "1";
+  const pad = 14, r = tip.getBoundingClientRect();
+  let x = evt.clientX + pad, y = evt.clientY + pad;
+  if (x + r.width > innerWidth - 8) x = evt.clientX - r.width - pad;
+  if (y + r.height > innerHeight - 8) y = evt.clientY - r.height - pad;
+  tip.style.left = x + "px"; tip.style.top = y + "px";
+}
+const hideTip = () => { tip.style.opacity = "0"; };
+
+/* ============================================================
+   6. RENDER — policy grids
+   ============================================================ */
+function buildGrid(container, who) {
+  container.innerHTML = "";
+  const p = providerState(state[who]);
+
+  // header row: corner + column labels
+  container.appendChild(el("div", "ch", ""));
+  for (let T = 4; T >= 0; T--) container.appendChild(el("div", "ch", COL_LABELS[T]));
+
+  for (let B = 4; B >= 0; B--) {
+    container.appendChild(el("div", "rh", ROW_LABELS[B]));
+    for (let T = 4; T >= 0; T--) {
+      const Be = effRow(B);
+      const key = policyMode(Be, T);
+      const m = MODES[key], d = Be - T, fill = fillFor(d);
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "cell" + (B === p.B && T === p.T ? " active" : "");
+      btn.style.background = fill;
+      btn.style.color = inkOn(fill);
+      btn.textContent = m.label;
+      const rhoTxt = m.rho === Infinity ? "∞" : m.rho.toFixed(2);
+      btn.setAttribute("aria-label",
+        `${who}, budget ${ROW_LABELS[B]}, ${COL_LABELS[T]} to reset: ${m.label}, rho ${rhoTxt}. ${m.meaning}`);
+      const info = `<strong>${m.label}</strong>
+        <span class="t-meta">budget ${ROW_LABELS[B]} · ${COL_LABELS[T]} left · surplus ${d > 0 ? "+" : ""}${d} · ρ ${rhoTxt}</span>
+        <div style="margin-top:5px">${m.meaning}<br><span class="t-meta">${m.action}</span></div>`;
+      btn.addEventListener("mousemove", e => showTip(e, info));
+      btn.addEventListener("mouseleave", hideTip);
+      btn.addEventListener("focus", e => {
+        const r = e.target.getBoundingClientRect();
+        showTip({ clientX: r.left + r.width / 2, clientY: r.bottom }, info);
+      });
+      btn.addEventListener("blur", hideTip);
+      // Clicking a cell jumps the sliders to that cell's centre.
+      btn.addEventListener("click", () => {
+        state[who].pct = B * 20 + 10;
+        state[who].min = T * 60 + 30;
+        syncInputs(); render();
+      });
+      container.appendChild(btn);
+    }
+  }
+}
+function el(tag, cls, text) { const n = document.createElement(tag); n.className = cls; n.textContent = text; return n; }
+
+function buildScale() {
+  const sw = $("scale-sw"); sw.innerHTML = "";
+  for (let d = -4; d <= 4; d++) {
+    const s = document.createElement("span");
+    s.className = "sw"; s.style.background = fillFor(d);
+    s.title = d === 0 ? "on pace" : (d > 0 ? "surplus +" : "deficit ") + d;
+    sw.appendChild(s);
+  }
+}
+
+// No color chip here on purpose: cell fill encodes *surplus*, not mode, so a
+// per-mode swatch would imply a mapping that does not exist (DEEP, STEADY and
+// LAND all sit on the neutral diagonal). The diverging scale legend above
+// carries the color; this table carries the modes.
+function buildModeLegend() {
+  const tb = $("mode-legend"); tb.innerHTML = "";
+  Object.values(MODES).forEach(m => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td><strong>${m.label}</strong></td>
+      <td class="rho">${m.rho === Infinity ? "∞" : m.rho.toFixed(2)}</td>
+      <td>${m.meaning}</td><td>${m.action}</td>`;
+    tb.appendChild(tr);
+  });
+}
+
+function buildGridTable() {
+  const t = $("grid-table");
+  let html = "<thead><tr><th>Budget \\ time left</th>" +
+    [4, 3, 2, 1, 0].map(T => `<th>${COL_LABELS[T]}</th>`).join("") + "</tr></thead><tbody>";
+  for (let B = 4; B >= 0; B--) {
+    html += `<tr><td class="name">${ROW_LABELS[B]}</td>`;
+    for (let T = 4; T >= 0; T--) {
+      const m = MODES[policyMode(effRow(B), T)];
+      html += `<td>${m.label}</td>`;
+    }
+    html += "</tr>";
+  }
+  t.innerHTML = html + "</tbody>";
+}
+
+/* ============================================================
+   7. RENDER — action plane (quadrant scatter + ρ line)
+   ============================================================ */
+const SVGNS = "http://www.w3.org/2000/svg";
+function svgEl(tag, attrs) {
+  const n = document.createElementNS(SVGNS, tag);
+  for (const k in attrs) n.setAttribute(k, attrs[k]);
+  return n;
+}
+
+function buildQuadrant(rho) {
+  const svg = $("quadrant");
+  [...svg.querySelectorAll(":not(title)")].forEach(n => n.remove());
+  const L = 58, R = 22, Tm = 18, Bm = 46;
+  const W = 760, H = 470, pw = W - L - R, ph = H - Tm - Bm;
+  const x = v => L + v * pw, y = v => Tm + (1 - v) * ph;
+
+  // recessive grid
+  for (let i = 0; i <= 4; i++) {
+    svg.appendChild(svgEl("line", { x1: L, x2: L + pw, y1: Tm + (ph / 4) * i, y2: Tm + (ph / 4) * i, class: "grid-line" }));
+    svg.appendChild(svgEl("line", { y1: Tm, y2: Tm + ph, x1: L + (pw / 4) * i, x2: L + (pw / 4) * i, class: "grid-line" }));
+  }
+  // axes
+  svg.appendChild(svgEl("line", { x1: L, x2: L + pw, y1: Tm + ph, y2: Tm + ph, class: "axis-line" }));
+  svg.appendChild(svgEl("line", { x1: L, x2: L, y1: Tm, y2: Tm + ph, class: "axis-line" }));
+  [["Low", 0], ["High", 1]].forEach(([t, v]) => {
+    const tx = svgEl("text", { x: x(v), y: Tm + ph + 18, class: "tick", "text-anchor": v ? "end" : "start" });
+    tx.textContent = t + " cost"; svg.appendChild(tx);
+    const ty = svgEl("text", { x: L - 8, y: y(v) + 4, class: "tick", "text-anchor": "end" });
+    ty.textContent = t; svg.appendChild(ty);
+  });
+  const ax = svgEl("text", { x: L + pw / 2, y: H - 8, class: "axis-title", "text-anchor": "middle" });
+  ax.textContent = "token cost per turn →"; svg.appendChild(ax);
+  const ay = svgEl("text", { x: 14, y: Tm + ph / 2, class: "axis-title", "text-anchor": "middle",
+    transform: `rotate(-90 14 ${Tm + ph / 2})` });
+  ay.textContent = "verified value →"; svg.appendChild(ay);
+
+  // The ρ gate line: value = rho · cost. Its value is reported in the card
+  // header rather than in-plot — an in-plot label collides with point labels
+  // at some slopes, and the line's meaning is already in the legend.
+  if (rho !== Infinity) {
+    const xEnd = Math.min(1, 1 / rho), yEnd = Math.min(1, rho);
+    svg.appendChild(svgEl("line", {
+      x1: x(0), y1: y(0), x2: x(xEnd), y2: y(yEnd),
+      stroke: "var(--text-primary)", "stroke-width": 2, "stroke-linecap": "round", opacity: 0.75,
+    }));
+  } else {
+    const lbl = svgEl("text", { x: L + pw / 2, y: Tm + ph / 2, class: "pt-label", "text-anchor": "middle" });
+    lbl.textContent = "parked — nothing executes at any cost";
+    lbl.setAttribute("fill", "var(--text-primary)");
+    lbl.setAttribute("font-weight", "600");
+    svg.appendChild(lbl);
+  }
+  $("rho-readout").textContent = rho === Infinity ? "ρ = ∞" : `ρ = ${rho.toFixed(2)}`;
+
+  // points
+  ACTIONS.forEach(a => {
+    const admitted = !a.waste && rho !== Infinity && a.value / a.cost >= rho;
+    const cx = x(a.cost), cy = y(a.value);
+    const hit = svgEl("circle", { cx, cy, r: 14, fill: "transparent", style: "cursor:pointer" });
+    const u = (a.value / a.cost).toFixed(2);
+    const verdict = a.waste ? "Documented waste — excluded at any ρ"
+      : admitted ? "Admitted — clears the gate" : "Deferred — below the line";
+    const info = `<strong>${a.name}</strong>
+      <span class="t-meta">cost ${a.cost.toFixed(2)} · value ${a.value.toFixed(2)} · U ${u}</span>
+      <div style="margin-top:5px">${verdict}</div>`;
+    hit.addEventListener("mousemove", e => showTip(e, info));
+    hit.addEventListener("mouseleave", hideTip);
+
+    if (a.waste) {
+      const g = svgEl("g", { stroke: "var(--critical)", "stroke-width": 2.4, "stroke-linecap": "round" });
+      g.appendChild(svgEl("line", { x1: cx - 5, y1: cy - 5, x2: cx + 5, y2: cy + 5 }));
+      g.appendChild(svgEl("line", { x1: cx + 5, y1: cy - 5, x2: cx - 5, y2: cy + 5 }));
+      svg.appendChild(g);
+    } else {
+      svg.appendChild(svgEl("circle", {
+        cx, cy, r: 5.5,
+        fill: admitted ? "var(--good)" : "none",
+        stroke: admitted ? "var(--surface-1)" : "var(--muted)",
+        "stroke-width": admitted ? 2 : 1.5,
+      }));
+    }
+    // labels always visible — identity never depends on color
+    const flip = a.cost > 0.62;
+    const t = svgEl("text", {
+      x: cx + (flip ? -10 : 10), y: cy + 4, class: "pt-label",
+      "text-anchor": flip ? "end" : "start",
+    });
+    t.textContent = a.name;
+    svg.appendChild(t);
+    svg.appendChild(hit);
+  });
+}
+
+function buildActionTable(rho) {
+  const rows = ACTIONS.map(a => {
+    const u = a.value / a.cost;
+    const st = a.waste ? "Documented waste"
+      : (rho !== Infinity && u >= rho) ? "Admitted" : "Deferred";
+    return `<tr><td class="name">${a.name}</td><td>${a.cost.toFixed(2)}</td><td>${a.value.toFixed(2)}</td><td>${u.toFixed(2)}</td><td class="name">${st}</td></tr>`;
+  }).join("");
+  $("action-table").innerHTML =
+    `<thead><tr><th>Action</th><th>Cost</th><th>Value</th><th>U</th><th>At current ρ</th></tr></thead><tbody>${rows}</tbody>`;
+}
+
+/* ============================================================
+   8. RENDER — trajectories
+   ============================================================ */
+const TRAJ = [
+  { name: "Ideal steady burn", slot: "--series-1", pts: [100, 80, 60, 40, 20, 2] },
+  { name: "Underuse → spend-down", slot: "--series-2", pts: [100, 93, 85, 76, 55, 8] },
+  { name: "Early exhaustion", slot: "--series-3", pts: [100, 55, 20, 4, 0, 0] },
+];
+
+function buildTraj() {
+  const svg = $("traj");
+  [...svg.querySelectorAll(":not(title)")].forEach(n => n.remove());
+  const L = 46, R = 172, Tm = 14, Bm = 42;
+  const W = 760, H = 330, pw = W - L - R, ph = H - Tm - Bm;
+  const x = h => L + (h / 5) * pw, y = v => Tm + (1 - v / 100) * ph;
+
+  for (let v = 0; v <= 100; v += 25) {
+    svg.appendChild(svgEl("line", { x1: L, x2: L + pw, y1: y(v), y2: y(v), class: "grid-line" }));
+    const t = svgEl("text", { x: L - 8, y: y(v) + 4, class: "tick", "text-anchor": "end" });
+    t.textContent = v + "%"; svg.appendChild(t);
+  }
+  svg.appendChild(svgEl("line", { x1: L, x2: L + pw, y1: y(0), y2: y(0), class: "axis-line" }));
+  for (let h = 0; h <= 5; h++) {
+    const t = svgEl("text", { x: x(h), y: Tm + ph + 18, class: "tick", "text-anchor": "middle" });
+    t.textContent = h; svg.appendChild(t);
+  }
+  const ax = svgEl("text", { x: L + pw / 2, y: H - 6, class: "axis-title", "text-anchor": "middle" });
+  ax.textContent = "hours into the 5-hour window"; svg.appendChild(ax);
+
+  TRAJ.forEach(s => {
+    const c = css(s.slot);
+    const dAttr = s.pts.map((v, i) => `${i ? "L" : "M"}${x(i)},${y(v)}`).join(" ");
+    svg.appendChild(svgEl("path", { d: dAttr, fill: "none", stroke: c, "stroke-width": 2, "stroke-linejoin": "round", "stroke-linecap": "round" }));
+  });
+
+  // Direct labels at the line ends. Two trajectories converge near zero, so
+  // push overlapping labels apart rather than letting them stack.
+  const MIN_GAP = 15;
+  const labels = TRAJ
+    .map(s => ({ name: s.name, want: y(s.pts[s.pts.length - 1]) + 4 }))
+    .sort((a, b) => a.want - b.want);
+  labels.forEach((l, i) => {
+    l.at = i === 0 ? l.want : Math.max(l.want, labels[i - 1].at + MIN_GAP);
+  });
+  const overflow = labels[labels.length - 1].at - (Tm + ph + 4);
+  if (overflow > 0) labels.forEach(l => { l.at -= overflow; });
+  labels.forEach(l => {
+    const t = svgEl("text", { x: x(5) + 10, y: l.at, class: "pt-label" });
+    t.textContent = l.name;
+    svg.appendChild(t);
+  });
+
+  // current Claude state marker
+  const p = state.claude;
+  const hoursIn = 5 - p.min / 60;
+  const mx = x(hoursIn), my = y(p.pct);
+  svg.appendChild(svgEl("circle", { cx: mx, cy: my, r: 7, fill: "none", stroke: "var(--surface-1)", "stroke-width": 4 }));
+  svg.appendChild(svgEl("circle", { cx: mx, cy: my, r: 7, fill: "none", stroke: "var(--text-primary)", "stroke-width": 2 }));
+  const ml = svgEl("text", { x: mx, y: my - 14, class: "pt-label", "text-anchor": "middle", "font-weight": "600" });
+  ml.setAttribute("fill", "var(--text-primary)");
+  ml.textContent = "Claude now";
+  svg.appendChild(ml);
+
+  $("traj-legend").innerHTML = TRAJ.map(s =>
+    `<span class="key"><span class="line-key" style="background:${css(s.slot)}"></span>${s.name}</span>`).join("");
+
+  const rows = TRAJ.map(s =>
+    `<tr><td class="name">${s.name}</td>${s.pts.map(v => `<td>${v}%</td>`).join("")}</tr>`).join("");
+  $("traj-table").innerHTML =
+    `<thead><tr><th>Trajectory</th>${[0,1,2,3,4,5].map(h => `<th>${h} h</th>`).join("")}</tr></thead><tbody>${rows}</tbody>`;
+}
+
+/* ============================================================
+   9. VERDICT
+   ============================================================ */
+function buildVerdict(c, x) {
+  const fmt = (who, s) => {
+    const n = $(who);
+    n.querySelector(".pmode").textContent = s.mode.label;
+    n.querySelector(".pmeta").textContent =
+      `ρ ${s.mode.rho === Infinity ? "∞" : s.mode.rho.toFixed(2)} · surplus ${s.d > 0 ? "+" : ""}${s.d} · ${s.mode.action.split(" · ")[0]} effort`;
+    n.style.borderLeftColor = fillFor(s.d);
+  };
+  fmt("v-claude", c); fmt("v-codex", x);
+
+  let headline, detail;
+  if (c.key === "PARK" && x.key === "PARK") {
+    headline = "Park — both windows spent";
+    detail = "No provider has meaningful budget. Wait for the earliest reset; queue the next plan offline.";
+  } else {
+    const winner = c.mode.rho <= x.mode.rho ? "claude" : "codex";
+    const w = winner === "claude" ? c : x, o = winner === "claude" ? x : c;
+    const wName = winner === "claude" ? "Claude" : "Codex";
+    const oName = winner === "claude" ? "Codex" : "Claude";
+    headline = `${wName} · ${w.mode.label}`;
+    detail = `${w.mode.action}. ${w.mode.meaning}.`;
+    if (o.key === "PARK" || o.key === "CONSERVE") {
+      detail += ` ${oName} is ${o.mode.label.toLowerCase()} — hand off before it hard-limits.`;
+    }
+  }
+  $("v-headline").textContent = headline;
+  $("v-detail").textContent = detail;
+}
+
+/* ============================================================
+   10. WIRE-UP
+   ============================================================ */
+function syncInputs() {
+  $("cb").value = state.claude.pct; $("ct").value = state.claude.min;
+  $("xb").value = state.codex.pct;  $("xt").value = state.codex.min;
+  $("cbo").textContent = state.claude.pct + "%";
+  $("cto").textContent = (state.claude.min / 60).toFixed(1) + " h";
+  $("xbo").textContent = state.codex.pct + "%";
+  $("xto").textContent = (state.codex.min / 60).toFixed(1) + " h";
+}
+
+function render() {
+  const c = providerState(state.claude), x = providerState(state.codex);
+  buildScale();
+  buildGrid($("grid-claude"), "claude");
+  buildGrid($("grid-codex"), "codex");
+  buildModeLegend();
+  buildGridTable();
+  buildVerdict(c, x);
+  // The action plane is gated by whichever provider is taking the next turn.
+  const rho = Math.min(c.mode.rho, x.mode.rho);
+  buildQuadrant(rho);
+  buildActionTable(rho);
+  buildTraj();
+}
+
+[["cb", "claude", "pct"], ["ct", "claude", "min"], ["xb", "codex", "pct"], ["xt", "codex", "min"]]
+  .forEach(([id, who, key]) => {
+    $(id).addEventListener("input", e => {
+      state[who][key] = +e.target.value;
+      syncInputs(); render();
+    });
+  });
+
+document.querySelectorAll("[data-pace]").forEach(b => {
+  b.addEventListener("click", () => {
+    state.pace = +b.dataset.pace;
+    document.querySelectorAll("[data-pace]").forEach(o => o.setAttribute("aria-pressed", String(o === b)));
+    render();
+  });
+});
+
+$("theme").addEventListener("click", () => {
+  const dark = document.documentElement.dataset.theme === "dark";
+  document.documentElement.dataset.theme = dark ? "light" : "dark";
+  $("theme").textContent = dark ? "Dark mode" : "Light mode";
+  render();
+});
+
+/* Scenario in the URL: ?c=<budget%>,<minutes>&x=<budget%>,<minutes>&pace=-1|0|1&theme=light
+   Makes a particular cell shareable, and lets the edge cases (PARK, light
+   mode) be opened directly. */
+(function applyQuery() {
+  const q = new URLSearchParams(location.search);
+  const pair = (key, who) => {
+    const raw = q.get(key); if (!raw) return;
+    const [pct, min] = raw.split(",").map(Number);
+    if (Number.isFinite(pct)) state[who].pct = Math.min(100, Math.max(0, pct));
+    if (Number.isFinite(min)) state[who].min = Math.min(300, Math.max(0, min));
+  };
+  pair("c", "claude"); pair("x", "codex");
+
+  const pace = Number(q.get("pace"));
+  if ([-1, 0, 1].includes(pace)) {
+    state.pace = pace;
+    document.querySelectorAll("[data-pace]").forEach(b =>
+      b.setAttribute("aria-pressed", String(+b.dataset.pace === pace)));
+  }
+  const theme = q.get("theme");
+  if (theme === "light" || theme === "dark") {
+    document.documentElement.dataset.theme = theme;
+    $("theme").textContent = theme === "dark" ? "Light mode" : "Dark mode";
+  }
+})();
+
+syncInputs();
+render();
+</script>
+</body>
+</html>

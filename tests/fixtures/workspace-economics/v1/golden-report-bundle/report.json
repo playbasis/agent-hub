@@ -1,0 +1,417 @@
+{
+  "assumptions" : {
+    "baseline" : "historical_2021_2022",
+    "customRates" : [
+
+    ],
+    "hoursPerDay" : "8",
+    "rateID" : "us-bls-15-1252-2025-05",
+    "subscriptions" : [
+      {
+        "id" : "claude-max",
+        "label" : "Claude Max",
+        "monthly" : {
+          "amount" : "200",
+          "currency" : "USD"
+        },
+        "provider" : "claude"
+      },
+      {
+        "id" : "chatgpt-pro",
+        "label" : "ChatGPT Pro",
+        "monthly" : {
+          "amount" : "200",
+          "currency" : "USD"
+        },
+        "provider" : "codex"
+      }
+    ],
+    "timeZone" : "GMT"
+  },
+  "contentLevel" : "local",
+  "costs" : {
+    "allocation" : "whole_period",
+    "state" : "known",
+    "tooling" : [
+      {
+        "amount" : {
+          "amount" : "46",
+          "currency" : "USD"
+        },
+        "calculation" : "200 USD a month × 7 of 30.44 days",
+        "label" : "ChatGPT Pro",
+        "provider" : "codex",
+        "subscriptionID" : "chatgpt-pro"
+      },
+      {
+        "amount" : {
+          "amount" : "46",
+          "currency" : "USD"
+        },
+        "calculation" : "200 USD a month × 7 of 30.44 days",
+        "label" : "Claude Max",
+        "provider" : "claude",
+        "subscriptionID" : "claude-max"
+      }
+    ],
+    "total" : {
+      "amount" : "92",
+      "currency" : "USD"
+    }
+  },
+  "economics" : {
+    "grossLaborEquivalent" : {
+      "base" : "1830.64",
+      "currency" : "USD",
+      "high" : "3138.24",
+      "low" : "1046.08"
+    },
+    "leverage" : {
+      "base" : "11.2",
+      "high" : "24",
+      "low" : "5.3"
+    },
+    "missing" : [
+
+    ],
+    "netOpportunity" : {
+      "base" : "1575.19",
+      "currency" : "USD",
+      "high" : "2915.48",
+      "low" : "757.94"
+    },
+    "operatorCost" : {
+      "base" : "163.45",
+      "currency" : "USD",
+      "high" : "196.14",
+      "low" : "130.76"
+    },
+    "operatorRate" : {
+      "basis" : "median_wage",
+      "derivation" : "Median annual wage $135,980 ÷ 2,080 hours, rounded to the cent",
+      "hourly" : {
+        "amount" : "65.38",
+        "currency" : "USD"
+      },
+      "id" : "us-bls-15-1252-2025-05",
+      "label" : "US software developer median wage, May 2025",
+      "region" : "United States",
+      "source" : {
+        "publisher" : "U.S. Bureau of Labor Statistics, Occupational Outlook Handbook",
+        "retrieved" : "2026-11-06",
+        "url" : "https://www.bls.gov/ooh/computer-and-information-technology/software-developers.htm"
+      },
+      "vintage" : "May 2025"
+    },
+    "rate" : {
+      "basis" : "median_wage",
+      "derivation" : "Median annual wage $135,980 ÷ 2,080 hours, rounded to the cent",
+      "hourly" : {
+        "amount" : "65.38",
+        "currency" : "USD"
+      },
+      "id" : "us-bls-15-1252-2025-05",
+      "label" : "US software developer median wage, May 2025",
+      "region" : "United States",
+      "source" : {
+        "publisher" : "U.S. Bureau of Labor Statistics, Occupational Outlook Handbook",
+        "retrieved" : "2026-11-06",
+        "url" : "https://www.bls.gov/ooh/computer-and-information-technology/software-developers.htm"
+      },
+      "vintage" : "May 2025"
+    },
+    "state" : "available",
+    "toolingCost" : {
+      "amount" : "92",
+      "currency" : "USD"
+    }
+  },
+  "effort" : {
+    "baseline" : "historical_2021_2022",
+    "estimatedOutcomes" : 1,
+    "hours" : {
+      "base" : "28",
+      "high" : "48",
+      "low" : "16"
+    },
+    "hoursPerDay" : "8",
+    "personDays" : {
+      "base" : "3.5",
+      "high" : "6",
+      "low" : "2"
+    },
+    "rubricVersion" : "hub-size-rubric/1",
+    "unestimatedOutcomes" : 0
+  },
+  "friction" : [
+    {
+      "count" : 2,
+      "detail" : "2 of 4 agent sessions in scanned repositories have no linked commit. Research, reviews, planning and uncommitted work land here too.",
+      "evidence" : [
+
+      ],
+      "kind" : "sessions_without_commits",
+      "tokens" : "1200"
+    },
+    {
+      "count" : 5,
+      "detail" : "74.7% of known tokens were context re-sent from cache on each step.",
+      "evidence" : [
+
+      ],
+      "kind" : "context_reread",
+      "share" : "0.7467",
+      "tokens" : "5600"
+    },
+    {
+      "count" : 1,
+      "detail" : "1 commit reverts earlier work.",
+      "evidence" : [
+        "c3000003"
+      ],
+      "kind" : "reverted_commits"
+    },
+    {
+      "count" : 2,
+      "detail" : "2 commits aren't linked to any agent session in view.",
+      "evidence" : [
+        "c6000006",
+        "c3000003"
+      ],
+      "kind" : "unlinked_commits"
+    }
+  ],
+  "generatedAt" : "2026-01-12T09:00:00.000Z",
+  "nextPrompt" : "Go through the 3 suggested outcomes with me. For each, I'll say whether it's accepted work, its delivery standard (prototype, internal tool or production) and roughly how many hands-on hours I spent; record them with `bridge economics accept --candidate <id>` or `bridge economics reject --candidate <id>`.\n1 commit was reverted. Before committing, run the project's checks and say which ones passed.",
+  "outcomes" : {
+    "accepted" : 1,
+    "commitsInAcceptedOutcomes" : 2,
+    "commitsInPeriod" : 6,
+    "corrections" : [
+
+    ],
+    "items" : [
+      {
+        "commits" : 2,
+        "deliveryStandard" : "internal_tool",
+        "effort" : {
+          "assessmentID" : "2b3c4d5e-6f7a-4b8c-9d0e-1f2a3b4c5d6e",
+          "assessments" : 2,
+          "assessor" : {
+            "identity" : "user",
+            "kind" : "human",
+            "rubricVersion" : "hub-size-rubric/1"
+          },
+          "baseline" : "historical_2021_2022",
+          "confidence" : "medium",
+          "disagreement" : false,
+          "hours" : {
+            "base" : "28",
+            "high" : "48",
+            "low" : "16"
+          },
+          "method" : "size_class",
+          "sizeClass" : "m",
+          "spread" : {
+            "base" : "28",
+            "high" : "60",
+            "low" : "16"
+          },
+          "stale" : false
+        },
+        "evidence" : [
+          {
+            "kind" : "commit",
+            "ref" : "c1000001",
+            "repositoryID" : "repo-billing"
+          },
+          {
+            "kind" : "commit",
+            "ref" : "c2000002",
+            "repositoryID" : "repo-billing"
+          },
+          {
+            "kind" : "session",
+            "ref" : "claude:s1",
+            "repositoryID" : null
+          }
+        ],
+        "landedAt" : "2026-01-06T11:00:00.000Z",
+        "lines" : {
+          "additions" : 430,
+          "deletions" : 25
+        },
+        "operatorTime" : {
+          "basis" : "user_estimate",
+          "highHours" : "3",
+          "lowHours" : "2",
+          "state" : "known"
+        },
+        "outcomeID" : "5b6c7d8e-9f0a-4b1c-8d2e-3f4a5b6c7d8e",
+        "repositories" : [
+          "acme-billing"
+        ],
+        "revertedCommits" : 1,
+        "revisionID" : "5b6c7d8e-9f0a-4b1c-8d2e-3f4a5b6c7d8e",
+        "sessions" : 1,
+        "summary" : "Reviewed by the team",
+        "title" : "Billing export"
+      }
+    ],
+    "linesInPeriod" : {
+      "additions" : 2247,
+      "deletions" : 257
+    },
+    "pending" : [
+      {
+        "candidateID" : "cand-4e693aba368d751c",
+        "commits" : 1,
+        "firstCommitAt" : "2026-01-10T09:00:00.000Z",
+        "lastCommitAt" : "2026-01-10T09:00:00.000Z",
+        "lines" : {
+          "additions" : 12,
+          "deletions" : 2
+        },
+        "repositories" : [
+          "acme-billing"
+        ],
+        "sessions" : 0,
+        "title" : "Update README"
+      },
+      {
+        "candidateID" : "cand-4af04e79aed2e092",
+        "commits" : 1,
+        "firstCommitAt" : "2026-01-08T10:00:00.000Z",
+        "lastCommitAt" : "2026-01-08T10:00:00.000Z",
+        "lines" : {
+          "additions" : 900,
+          "deletions" : 100
+        },
+        "repositories" : [
+          "acme-billing"
+        ],
+        "sessions" : 1,
+        "title" : "Add audit log"
+      },
+      {
+        "candidateID" : "cand-d6684ee23fa9c112",
+        "commits" : 1,
+        "firstCommitAt" : "2026-01-07T15:00:00.000Z",
+        "lastCommitAt" : "2026-01-07T15:00:00.000Z",
+        "lines" : {
+          "additions" : 5,
+          "deletions" : 30
+        },
+        "repositories" : [
+          "acme-billing"
+        ],
+        "sessions" : 0,
+        "title" : "Revert \"Fix export rounding\""
+      }
+    ],
+    "pendingCandidates" : 3,
+    "rejected" : 0
+  },
+  "period" : {
+    "from" : "2026-01-05T09:00:00.000Z",
+    "granularity" : "custom",
+    "label" : "Custom period",
+    "timeZone" : "GMT",
+    "to" : "2026-01-12T09:00:00.000Z"
+  },
+  "reportID" : "sha256:cf1c1fbd6ff70e3da14923ac945834fff38172e9cd083b702c1586a5bb82f7aa",
+  "schemaVersion" : "economic-report/1",
+  "scope" : {
+    "projects" : [
+      {
+        "id" : "repo-billing",
+        "name" : "acme-billing",
+        "path" : "/work/acme/billing"
+      }
+    ],
+    "sessions" : 5
+  },
+  "snapshot" : {
+    "accountingFingerprint" : "sha256:118554eb4089c3967d6f46fc960d906d4f8ca443300c85be8bdefef251342bc1",
+    "accountingSchema" : "accounting/1",
+    "asOf" : "2026-01-12T09:00:00.000Z",
+    "metricDefinitions" : "activity-metrics/1",
+    "repositoriesScannedAt" : "2026-01-12T09:00:00.000Z",
+    "sourceCoverageIsPartial" : false
+  },
+  "time" : {
+    "activeSeconds" : 13320,
+    "agentSeconds" : 14400,
+    "operatorTime" : {
+      "hours" : {
+        "base" : "2.5",
+        "high" : "3",
+        "low" : "2"
+      },
+      "outcomesWithoutTime" : 0,
+      "outcomesWithTime" : 1,
+      "state" : "known"
+    }
+  },
+  "uncertainty" : [
+    {
+      "code" : "pending_candidates",
+      "message" : "3 suggested outcomes are waiting for a decision; only accepted work counts."
+    },
+    {
+      "code" : "reverted_evidence",
+      "message" : "1 accepted outcome includes commits that were later reverted; revise or withdraw it if the work didn't stick."
+    },
+    {
+      "code" : "wage_equivalent",
+      "message" : "Wage equivalents are what comparable hours would cost at the chosen rate: not revenue, market value or cash saved."
+    }
+  ],
+  "usage" : {
+    "byModel" : [
+      {
+        "model" : "example-codex",
+        "modelSteps" : 3,
+        "outputTokens" : "290",
+        "provider" : "codex",
+        "tokens" : "6200"
+      },
+      {
+        "model" : "example-claude",
+        "modelSteps" : 2,
+        "outputTokens" : "130",
+        "provider" : "claude",
+        "tokens" : "1300"
+      }
+    ],
+    "byProvider" : [
+      {
+        "modelSteps" : 2,
+        "outputTokens" : "130",
+        "provider" : "claude",
+        "sessions" : 2,
+        "tokens" : "1300"
+      },
+      {
+        "modelSteps" : 3,
+        "outputTokens" : "290",
+        "provider" : "codex",
+        "sessions" : 3,
+        "tokens" : "6200"
+      }
+    ],
+    "composition" : {
+      "cacheWrites" : "0",
+      "freshInput" : "1480",
+      "output" : "420",
+      "rereadContext" : "5600"
+    },
+    "modelSteps" : 5,
+    "outputTokens" : "420",
+    "rereadShare" : "0.7467",
+    "scope" : "local_native_history",
+    "sessions" : 5,
+    "tokens" : "7500",
+    "tokensArePartial" : false
+  }
+}

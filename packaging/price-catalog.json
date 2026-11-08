@@ -1,0 +1,49 @@
+{
+  "schema_version": "1.0",
+  "catalog_version": 2,
+  "generated_at": "2026-08-01",
+  "note": "USD per 1,000,000 tokens. Every entry carries its own provenance and source. A model absent from this catalog yields a null cost with provenance 'unavailable' — the bridge never extrapolates a price from a sibling model.",
+  "models": [
+    {
+      "model": "claude-opus-5",
+      "agent": "claude",
+      "input": 5.0,
+      "cache_read": 0.5,
+      "cache_write_5m": 6.25,
+      "cache_write_1h": 10.0,
+      "output": 25.0,
+      "provenance": "published",
+      "source": "Anthropic published API pricing, retrieved 2026-08-01. Cache tiers are the documented multipliers: read 0.1x, write 1.25x (5m) / 2x (1h)."
+    },
+    {
+      "model": "claude-fable-5",
+      "agent": "claude",
+      "input": 10.0,
+      "cache_read": 1.0,
+      "cache_write_5m": 12.5,
+      "cache_write_1h": 20.0,
+      "output": 50.0,
+      "provenance": "published",
+      "source": "Anthropic published API pricing, retrieved 2026-08-01."
+    },
+    {
+      "model": "claude-sonnet-5",
+      "agent": "claude",
+      "input": 2.0,
+      "cache_read": 0.2,
+      "cache_write_5m": 2.5,
+      "cache_write_1h": 4.0,
+      "output": 10.0,
+      "provenance": "published",
+      "expires_at": "2026-08-31",
+      "standard_after_expiry": {
+        "input": 3.0,
+        "cache_read": 0.3,
+        "cache_write_5m": 3.75,
+        "cache_write_1h": 6.0,
+        "output": 15.0
+      },
+      "source": "Anthropic INTRODUCTORY pricing, active through 2026-08-31. Reverts to the standard_after_expiry rates on 2026-09-01; a cost baseline set today will shift by 1.5x."
+    }
+  ]
+}

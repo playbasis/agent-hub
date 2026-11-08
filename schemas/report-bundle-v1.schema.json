@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:playbasis:ai-agent-hub:report-bundle:1",
+  "title": "Economic report bundle manifest",
+  "description": "manifest.json of an exported report folder. Lists every file with its size, sha256 and contract. A reader verifies the folder holds only listed plain files with matching checksums, opens imported reports in their own namespace and never merges them into live data, executes their text, follows their links or scans the folders they mention. Checksums establish integrity, not truth.",
+  "type": "object",
+  "additionalProperties": false,
+  "patternProperties": { "^x-": true },
+  "required": ["schemaVersion", "reportID", "createdAt", "contentLevel", "producer", "files"],
+  "properties": {
+    "schemaVersion": { "const": "report-bundle/1" },
+    "reportID": { "$ref": "workspace-common-v1.schema.json#/$defs/digest" },
+    "createdAt": { "$ref": "workspace-common-v1.schema.json#/$defs/timestamp" },
+    "contentLevel": { "enum": ["local", "sanitized"] },
+    "producer": {
+      "type": "object",
+      "additionalProperties": false,
+      "patternProperties": { "^x-": true },
+      "required": ["name", "version"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "version": { "type": "string", "minLength": 1, "maxLength": 64 }
+      }
+    },
+    "files": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 16,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "patternProperties": { "^x-": true },
+        "required": ["path", "bytes", "sha256", "schemaVersion"],
+        "properties": {
+          "path": { "enum": ["report.json", "outcomes.json", "assessments.json", "assumptions.json", "evidence-index.json", "receipts.jsonl", "briefing.md"] },
+          "bytes": { "type": "integer", "minimum": 0, "maximum": 33554432 },
+          "sha256": { "$ref": "workspace-common-v1.schema.json#/$defs/digest" },
+          "schemaVersion": { "type": "string", "minLength": 1, "maxLength": 64 }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "evidenceIndex": {
+      "type": "object",
+      "additionalProperties": false,
+      "patternProperties": { "^x-": true },
+      "required": ["schemaVersion", "reportID", "entries"],
+      "properties": {
+        "schemaVersion": { "const": "evidence-index/1" },
+        "reportID": { "$ref": "workspace-common-v1.schema.json#/$defs/digest" },
+        "entries": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "patternProperties": { "^x-": true },
+            "required": ["outcomeID", "evidence"],
+            "properties": {
+              "outcomeID": { "$ref": "workspace-common-v1.schema.json#/$defs/uuid" },
+              "evidence": { "type": "array", "items": { "$ref": "workspace-common-v1.schema.json#/$defs/outcomeEvidence" } }
+            }
+          }
+        }
+      }
+    },
+    "outcomesFile": {
+      "type": "array",
+      "items": { "$ref": "accepted-outcome-v1.schema.json" },
+      "description": "outcomes.json: every revision of the outcomes in the report, oldest first."
+    },
+    "assessmentsFile": {
+      "type": "array",
+      "items": { "$ref": "effort-assessment-v1.schema.json" },
+      "description": "assessments.json: every assessment of those outcomes, oldest first."
+    }
+  }
+}

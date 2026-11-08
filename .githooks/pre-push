@@ -1,0 +1,12 @@
+#!/bin/sh
+# Enabled by `make hooks`. Blocks a push that would publish keys, personal
+# paths or extra terms you list in HUB_EXTRA_FORBIDDEN.
+set -eu
+
+ROOT=$(git rev-parse --show-toplevel)
+"$ROOT/scripts/check-clean.sh"
+if command -v gitleaks >/dev/null 2>&1; then
+  gitleaks git --redact --no-banner --config "$ROOT/.gitleaks.toml" "$ROOT"
+else
+  echo "pre-push: gitleaks not installed; ran the hygiene check only (brew install gitleaks)." >&2
+fi

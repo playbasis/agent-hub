@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:playbasis:ai-agent-hub:work-reflection:1",
+  "title": "Work reflection revision",
+  "description": "Private metadata-only local review. No prompts, tool payloads or private reasoning are collected. Source identifies a human judgment, explicit deterministic check, or optional model judgment; these must never be pooled into an overall quality score. Approval records a human decision only and does not apply a skill change or send work.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "id", "reviewID", "revision", "createdAt", "draft", "decisionByHuman"],
+  "properties": {
+    "schemaVersion": { "const": "work-reflection/1" },
+    "id": { "type": "string", "format": "uuid" },
+    "reviewID": { "type": "string", "format": "uuid" },
+    "revision": { "type": "integer", "minimum": 1, "maximum": 2048 },
+    "supersedesID": { "type": ["string", "null"], "format": "uuid" },
+    "createdAt": { "type": "string", "format": "date-time", "description": "Persisted at the shared millisecond wire precision." },
+    "draft": { "$ref": "#/$defs/draft" },
+    "proposalDecision": { "enum": ["pending", "approved", "rejected", null] },
+    "decisionByHuman": { "type": "boolean", "description": "True only for an explicit approval/rejection revision. Never proves that a suggestion was applied." }
+  },
+  "$defs": {
+    "reference": { "type": ["string", "null"], "minLength": 1, "maxLength": 512 },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["provider", "sessionID"],
+      "properties": {
+        "provider": { "enum": ["claude", "codex", "grok"] },
+        "sessionID": { "type": "string", "minLength": 1, "maxLength": 512 },
+        "goalID": { "$ref": "#/$defs/reference" },
+        "nativeSessionID": { "$ref": "#/$defs/reference" },
+        "nativeTurnID": { "$ref": "#/$defs/reference" },
+        "modelStepID": { "$ref": "#/$defs/reference" },
+        "toolCallID": { "$ref": "#/$defs/reference" },
+        "stageID": { "$ref": "#/$defs/reference" },
+        "traceReceiptID": { "$ref": "#/$defs/reference" },
+        "payloadDigest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "snapshotAsOf": { "type": "string", "format": "date-time" }
+      },
+      "description": "Links to existing telemetry, not duplicated measurements. A reference records the review target but does not itself prove a diagnosis or cause. Native files are never altered."
+    },
+    "draft": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["evidence", "source", "outcome", "basis"],
+      "properties": {
+        "evidence": { "type": "array", "items": { "$ref": "#/$defs/evidence" }, "minItems": 1, "maxItems": 16 },
+        "source": { "enum": ["human_rating", "deterministic_check", "model_assessment"] },
+        "basis": { "enum": ["observation", "judgment", "uncertain"] },
+        "outcome": { "enum": ["useful", "partial", "blocked", "unknown"] },
+        "rating": { "type": ["integer", "null"], "minimum": 1, "maximum": 5, "description": "Optional judgment, not inferred from tokens, activity, commits or time. Missing is unknown, never zero." },
+        "issue": { "enum": ["failed_tool", "failed_test", "unclear_request", "unsupported_assumption", "repeated_step", "reversed_step", "malformed_request", "other", null] },
+        "note": { "type": ["string", "null"], "maxLength": 1201, "description": "Explicit short local note, bounded and redacted with the trace privacy redactor before persistence." },
+        "proposedSkillChange": { "type": ["string", "null"], "maxLength": 1201, "description": "Advisory only. New or edited suggestions require fresh approval; no automatic skill edits are supported." },
+        "rubricVersion": { "$ref": "#/$defs/reference" },
+        "comparisonKey": { "$ref": "#/$defs/reference", "description": "Only identical explicit comparison keys, sources, bases, rubrics, checks and judge identities can be aggregated. Missing comparison keys keep reviews separate." },
+        "rubricHash": { "$ref": "#/$defs/reference" },
+        "assessorModel": { "$ref": "#/$defs/reference", "description": "Model acting as judge, not an inferred identity of the agent being reviewed." },
+        "checkName": { "$ref": "#/$defs/reference" },
+        "checkPassed": { "type": ["boolean", "null"], "description": "Explicit deterministic result only. False is an observed failed check; null/omitted means unmeasured." }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "source": { "const": "deterministic_check" } }, "required": ["source"] },
+          "then": {
+            "required": ["checkName", "checkPassed"],
+            "properties": { "basis": { "const": "observation" }, "outcome": { "const": "unknown" }, "rating": { "type": "null" }, "checkPassed": { "type": "boolean" }, "checkName": { "type": "string", "minLength": 1 } }
+          },
+          "else": { "properties": { "checkPassed": { "type": "null" } } }
+        },
+        {
+          "if": { "properties": { "source": { "const": "model_assessment" } }, "required": ["source"] },
+          "then": {
+            "required": ["assessorModel", "rubricVersion"],
+            "properties": { "assessorModel": { "type": "string", "minLength": 1 }, "rubricVersion": { "type": "string", "minLength": 1 }, "basis": { "enum": ["judgment", "uncertain"] } }
+          }
+        }
+      ]
+    }
+  }
+}

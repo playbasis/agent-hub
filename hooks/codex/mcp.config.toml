@@ -1,0 +1,4 @@
+[mcp_servers.claude_codex_bridge]
+command = "bridge"
+args = ["mcp-server"]
+

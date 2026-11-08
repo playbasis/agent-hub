@@ -1,0 +1,35 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "http",
+            "url": "http://127.0.0.1:8742/hooks/claude/SessionStart",
+            "headers": {
+              "Authorization": "Bearer REPLACE_WITH_LOCAL_BRIDGE_TOKEN"
+            },
+            "timeout": 30
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "http",
+            "url": "http://127.0.0.1:8742/hooks/claude/Stop",
+            "headers": {
+              "Authorization": "Bearer REPLACE_WITH_LOCAL_BRIDGE_TOKEN"
+            },
+            "timeout": 30
+          }
+        ]
+      }
+    ]
+  }
+}
+

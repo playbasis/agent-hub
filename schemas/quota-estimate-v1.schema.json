@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://local.claude-codex-bridge/schemas/quota-estimate-v1.schema.json",
+  "title": "QuotaEstimate",
+  "description": "Provider-account capacity metadata, separate from local accounting/1. Optional fields preserve historical caches. Credits are not money, token totals or measured charges.",
+  "type": "object",
+  "required": ["agent"],
+  "properties": {
+    "agent": { "type": "string" },
+    "available": { "type": "boolean", "description": "Legacy conservative Bridge routing eligibility, not credit-spending authorization or external process liveness." },
+    "remaining_ratio": { "type": "number", "minimum": 0, "maximum": 1, "description": "Included plan-window ratio; meaningless as a credit balance. Missing windows do not establish 100% allowance." },
+    "limited_until": { "type": ["string", "null"], "format": "date-time" },
+    "observed_turns": { "type": "integer", "minimum": 0 },
+    "observed_limits": { "type": "integer", "minimum": 0 },
+    "windows": { "type": "array", "items": { "type": "object" } },
+    "source": { "enum": ["live", "cached", "observed", "unavailable"] },
+    "fetched_at": { "type": ["string", "null"], "format": "date-time" },
+    "refresh_failed_at": { "type": ["string", "null"], "format": "date-time", "description": "A failed refresh makes retained values historical immediately." },
+    "plan_name": { "type": ["string", "null"] },
+    "status_message": { "type": ["string", "null"] },
+    "limit_id": { "type": ["string", "null"] },
+    "limit_name": { "type": ["string", "null"] },
+    "account_identity_hash": { "type": ["string", "null"], "description": "Pseudonymous linked sign-in marker. This is not a stable workspace ID." },
+    "rate_limit_reached_type": { "type": ["string", "null"] },
+    "spend_control_reached": { "type": ["boolean", "null"] },
+    "available_reset_credits": { "type": ["integer", "null"], "minimum": 0, "description": "Earned rate-limit reset count. Never add it to spendable credits." },
+    "credits": {
+      "type": ["object", "null"],
+      "properties": {
+        "balance": { "type": ["string", "null"], "maxLength": 128, "pattern": "^[0-9]+(?:\\.[0-9]+)?(?![\\s\\S])", "description": "Exact nonnegative provider decimal string in credits, not USD. Missing is unknown, not zero." },
+        "has_credits": { "type": ["boolean", "null"] },
+        "unlimited": { "type": ["boolean", "null"] }
+      }
+    }
+  }
+}

@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://local.claude-codex-bridge/schemas/status-1.0.json",
+  "title": "BridgeStatus",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "state",
+    "active_agent",
+    "quota",
+    "provider",
+    "service_version"
+  ],
+  "properties": {
+    "state": {
+      "enum": ["idle", "thinking", "running", "paused", "parked", "error", "complete", "stopped"]
+    },
+    "active_agent": { "enum": ["claude", "codex", "grok", "none"] },
+    "session": { "type": ["object", "null"] },
+    "latest_decision": { "type": ["object", "null"] },
+    "quota": {
+      "type": "object",
+      "additionalProperties": { "$ref": "quota-estimate-v1.schema.json" }
+    },
+    "provider": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["provider", "state", "fallback_active"],
+      "properties": {
+        "provider": { "type": "string" },
+        "state": { "enum": ["checking", "ready", "degraded"] },
+        "fallback_active": { "type": "boolean" },
+        "message": { "type": ["string", "null"] },
+        "last_checked": { "type": ["string", "null"], "format": "date-time" }
+      }
+    },
+    "service_version": { "type": "string" }
+  }
+}

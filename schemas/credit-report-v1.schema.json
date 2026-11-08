@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://local.claude-codex-bridge/schemas/credit-report-v1.schema.json",
+  "title": "Credit report snapshot / 1",
+  "description": "CreditHistorySnapshot API wrapper. Resolve sibling credit-history-v1.schema.json locally when validating. Provider account history remains separate from optional local token-price equivalents; no inferred billing ledger or local attribution is authorized. Optional missing values are unknown, not zero. Future object properties are allowed.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["schemaVersion", "history", "currentScope"],
+  "properties": {
+    "schemaVersion": { "const": "credit-report/1" },
+    "history": { "$ref": "credit-history-v1.schema.json" },
+    "currentScope": { "$ref": "credit-history-v1.schema.json#/$defs/scope" },
+    "recordingWarning": { "type": ["string", "null"] },
+    "providerRefreshFailedAt": { "type": ["string", "null"], "format": "date-time", "description": "A failed provider refresh makes retained readings historical immediately; it does not imply an unchanged or zero balance." }
+  }
+}

@@ -1,0 +1,105 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://local.claude-codex-bridge/schemas/trace-1.0.json",
+  "title": "TraceRecord",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "id",
+    "sequence",
+    "timestamp",
+    "bridge_session_id",
+    "turn_id",
+    "provider",
+    "identity",
+    "usage",
+    "tools",
+    "outcome",
+    "completeness",
+    "warnings",
+    "cost_provenance",
+    "adapter_version",
+    "record_hash"
+  ],
+  "properties": {
+    "schema_version": { "const": "1.0" },
+    "id": { "type": "string", "minLength": 1 },
+    "sequence": { "type": "integer", "minimum": 1 },
+    "timestamp": { "type": "string", "format": "date-time" },
+    "bridge_session_id": { "type": "string", "minLength": 1 },
+    "turn_id": { "type": "string", "minLength": 1 },
+    "event_id": { "type": ["string", "null"] },
+    "provider": { "enum": ["claude", "codex", "gemini", "rules"] },
+    "evidence_providers": {
+      "type": ["array", "null"],
+      "items": { "enum": ["claude", "codex", "gemini", "rules"] },
+      "uniqueItems": true
+    },
+    "native_session_id": { "type": ["string", "null"] },
+    "native_turn_id": { "type": ["string", "null"] },
+    "identity": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "requested_model": { "type": ["string", "null"] },
+        "resolved_model": { "type": ["string", "null"] },
+        "requested_effort": { "type": ["string", "null"] },
+        "resolved_effort": { "type": ["string", "null"] },
+        "model_provider": { "type": ["string", "null"] },
+        "service_tier": { "type": ["string", "null"] },
+        "context_window": { "type": ["integer", "null"], "minimum": 0 },
+        "sandbox": { "type": ["string", "null"] },
+        "permission_mode": { "type": ["string", "null"] }
+      }
+    },
+    "usage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["provenance"],
+      "properties": {
+        "input": { "type": ["integer", "null"], "minimum": 0 },
+        "output": { "type": ["integer", "null"], "minimum": 0 },
+        "cached_input": { "type": ["integer", "null"], "minimum": 0 },
+        "cache_write_input": { "type": ["integer", "null"], "minimum": 0 },
+        "reasoning": { "type": ["integer", "null"], "minimum": 0 },
+        "total": { "type": ["integer", "null"], "minimum": 0 },
+        "provenance": {
+          "enum": ["provider_reported", "derived", "estimated", "unavailable"]
+        }
+      }
+    },
+    "tools": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "name", "status"],
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "category": { "type": ["string", "null"] },
+          "status": { "type": "string" },
+          "duration_ms": { "type": ["integer", "null"], "minimum": 0 },
+          "exit_code": { "type": ["integer", "null"] },
+          "redacted_summary": { "type": ["string", "null"] },
+          "content_digest": { "type": ["string", "null"] }
+        }
+      }
+    },
+    "duration_ms": { "type": ["integer", "null"], "minimum": 0 },
+    "time_to_first_token_ms": { "type": ["integer", "null"], "minimum": 0 },
+    "outcome": { "type": "string" },
+    "exit_code": { "type": ["integer", "null"] },
+    "completeness": { "enum": ["complete", "partial", "legacy"] },
+    "warnings": { "type": "array", "items": { "type": "string" } },
+    "budget_reserved": { "type": ["integer", "null"], "minimum": 0 },
+    "budget_remaining": { "type": ["integer", "null"] },
+    "estimated_cost_usd": { "type": ["number", "null"], "minimum": 0 },
+    "cost_provenance": {
+      "enum": ["provider_reported", "derived", "estimated", "unavailable"]
+    },
+    "adapter_version": { "type": "string" },
+    "previous_hash": { "type": ["string", "null"] },
+    "record_hash": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+  }
+}

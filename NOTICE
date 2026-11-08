@@ -1,0 +1,21 @@
+Playbasis AI Agent Hub
+Copyright 2026 Playbasis
+
+Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+The licence covers the source code, documentation and the skill portraits in
+this repository. It does not cover these files, which are included only so the
+app can show them:
+
+- The Playbasis name, the Playbasis "P" mark and the app icon
+  (packaging/Brand, packaging/AppIcon.icns and
+  apps/MenuBar/Sources/ClaudeCodexBridgeMenuBar/Resources/Brand). These are
+  trademarks of Playbasis.
+- The agent persona portraits in
+  apps/MenuBar/Sources/ClaudeCodexBridgeMenuBar/Resources/AgentPersonas.
+  All rights reserved by Playbasis.
+- The provider logos in
+  apps/MenuBar/Sources/ClaudeCodexBridgeMenuBar/Resources/ProviderLogos. The
+  Claude, OpenAI and Gemini marks belong to their owners and are used only to
+  identify those services. grok.svg comes from LobeHub Icons under the MIT
+  licence; see LOBEHUB-LICENSE.txt in that folder.

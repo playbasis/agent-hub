@@ -1,0 +1,156 @@
+{
+  "claude-partial-history" : {
+    "all" : {
+      "activeSeconds" : null,
+      "agentSeconds" : null,
+      "output" : "100",
+      "partialReceipts" : 3,
+      "receipts" : 4,
+      "seriesResets" : 0,
+      "sessions" : 1,
+      "tokens" : "800",
+      "tokensArePartial" : true,
+      "toolCalls" : null,
+      "wallClockSpanSeconds" : null
+    },
+    "ingest" : {
+      "accepted" : 4,
+      "conflicts" : 0,
+      "duplicates" : 0,
+      "rejected" : 0,
+      "stale" : 0,
+      "superseded" : 0
+    }
+  },
+  "codex-cumulative-usage" : {
+    "all" : {
+      "activeSeconds" : null,
+      "agentSeconds" : null,
+      "output" : "450",
+      "partialReceipts" : 0,
+      "receipts" : 5,
+      "seriesResets" : 1,
+      "sessions" : 1,
+      "tokens" : "4600",
+      "tokensArePartial" : false,
+      "toolCalls" : null,
+      "wallClockSpanSeconds" : null
+    },
+    "ingest" : {
+      "accepted" : 5,
+      "conflicts" : 0,
+      "duplicates" : 1,
+      "rejected" : 0,
+      "stale" : 0,
+      "superseded" : 0
+    },
+    "window" : {
+      "activeSeconds" : null,
+      "agentSeconds" : null,
+      "output" : "300",
+      "partialReceipts" : 0,
+      "receipts" : 3,
+      "seriesResets" : 0,
+      "sessions" : 1,
+      "tokens" : "3000",
+      "tokensArePartial" : false,
+      "toolCalls" : null,
+      "wallClockSpanSeconds" : null
+    }
+  },
+  "concurrent-agents" : {
+    "all" : {
+      "activeSeconds" : 1200,
+      "agentSeconds" : 1500,
+      "output" : "22",
+      "partialReceipts" : 0,
+      "receipts" : 3,
+      "seriesResets" : 0,
+      "sessions" : 2,
+      "tokens" : "220",
+      "tokensArePartial" : false,
+      "toolCalls" : 5,
+      "wallClockSpanSeconds" : 1200
+    },
+    "ingest" : {
+      "accepted" : 3,
+      "conflicts" : 0,
+      "duplicates" : 0,
+      "rejected" : 0,
+      "stale" : 0,
+      "superseded" : 0
+    },
+    "window" : {
+      "activeSeconds" : 300,
+      "agentSeconds" : 300,
+      "output" : "10",
+      "partialReceipts" : 0,
+      "receipts" : 1,
+      "seriesResets" : 0,
+      "sessions" : 1,
+      "tokens" : "100",
+      "tokensArePartial" : false,
+      "toolCalls" : 3,
+      "wallClockSpanSeconds" : 300
+    }
+  },
+  "duplicate-imports-and-corrections" : {
+    "all" : {
+      "activeSeconds" : null,
+      "agentSeconds" : null,
+      "output" : "17",
+      "partialReceipts" : 0,
+      "receipts" : 2,
+      "seriesResets" : 0,
+      "sessions" : 1,
+      "tokens" : "170",
+      "tokensArePartial" : false,
+      "toolCalls" : null,
+      "wallClockSpanSeconds" : null
+    },
+    "ingest" : {
+      "accepted" : 2,
+      "conflicts" : 1,
+      "duplicates" : 2,
+      "rejected" : 1,
+      "stale" : 1,
+      "superseded" : 1
+    }
+  },
+  "workspaceops-receipts" : {
+    "account" : {
+      "activeSeconds" : null,
+      "agentSeconds" : null,
+      "output" : "9223372036854775807",
+      "partialReceipts" : 0,
+      "receipts" : 1,
+      "seriesResets" : 0,
+      "sessions" : 1,
+      "tokens" : "9223372036854775807",
+      "tokensArePartial" : false,
+      "toolCalls" : null,
+      "wallClockSpanSeconds" : null
+    },
+    "all" : {
+      "activeSeconds" : null,
+      "agentSeconds" : null,
+      "output" : "250",
+      "partialReceipts" : 0,
+      "receipts" : 2,
+      "seriesResets" : 0,
+      "sessions" : 1,
+      "tokens" : "3000",
+      "tokensArePartial" : false,
+      "toolCalls" : 5,
+      "wallClockSpanSeconds" : null
+    },
+    "ingest" : {
+      "accepted" : 3,
+      "conflicts" : 0,
+      "duplicates" : 0,
+      "rejected" : 0,
+      "stale" : 0,
+      "superseded" : 0
+    }
+  }
+}

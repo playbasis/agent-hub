@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "jev-tool-page-assessment-v1.schema.json",
+  "title": "Historical structured tool page assessment",
+  "type": "object", "additionalProperties": false,
+  "required": ["schemaVersion", "id", "sessionID", "turnID", "evidenceID", "captureID", "model", "rubricHash", "stateHash", "requestHash", "source", "pagePartial", "toolFactsTruncated", "artifactCountIsPartial", "factCount", "answers", "noul"],
+  "properties": {
+    "schemaVersion": {"const": "jev-tool-page-assessment/1"}, "source": {"const": "historical_structured_page"},
+    "id": {"type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[A-Za-z0-9._:-]+$"},
+    "sessionID": {"type": "string", "minLength": 1, "maxLength": 1024}, "turnID": {"type": "string", "minLength": 1, "maxLength": 1024},
+    "evidenceID": {"type": "string", "pattern": "^evidence:[a-f0-9]{64}$"},
+    "captureID": {"$ref": "#/$defs/digest"},
+    "model": {"type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[A-Za-z0-9._:-]+$"},
+    "rubricHash": {"$ref": "#/$defs/digest"}, "stateHash": {"$ref": "#/$defs/digest"}, "requestHash": {"$ref": "#/$defs/digest"},
+    "assessedAt": {"type": ["string", "null"], "format": "date-time"}, "capturedAt": {"type": ["string", "null"], "format": "date-time"},
+    "pagePartial": {"type": "boolean"}, "toolFactsTruncated": {"type": "boolean"}, "artifactCountIsPartial": {"type": "boolean"}, "factCount": {"type": "integer", "minimum": 1, "maximum": 20},
+    "answers": {"allOf": [{"$ref": "#/$defs/fields"}], "patternProperties": {"^(listedNonzeroExit|listedCompletedTool|artifactRecorded|goalStatusRecordedCompleted|listedMissingDuration|recordedModelsPresent|turnElapsedMissing)$": {"enum": ["yes", "no", "unknown"]}}, "additionalProperties": false},
+    "noul": {"allOf": [{"$ref": "#/$defs/fields"}], "patternProperties": {"^(listedNonzeroExit|listedCompletedTool|artifactRecorded|goalStatusRecordedCompleted|listedMissingDuration|recordedModelsPresent|turnElapsedMissing)$": {"type": "number", "minimum": 0, "maximum": 1}}, "additionalProperties": false}
+  },
+  "$defs": {
+    "digest": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "fields": {"type": "object", "required": ["listedNonzeroExit", "listedCompletedTool", "artifactRecorded", "goalStatusRecordedCompleted", "listedMissingDuration", "recordedModelsPresent", "turnElapsedMissing"], "properties": {"listedNonzeroExit": {}, "listedCompletedTool": {}, "artifactRecorded": {}, "goalStatusRecordedCompleted": {}, "listedMissingDuration": {}, "recordedModelsPresent": {}, "turnElapsedMissing": {}}}
+  }
+}

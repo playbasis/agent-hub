@@ -1,0 +1,1466 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:playbasis:ai-agent-hub:accounting:1",
+  "title": "Playbasis AI Agent Hub accounting/1",
+  "description": "Canonical local-history Report contract. The series sibling is available at #/$defs/series. Timestamp boundaries are compared at the same millisecond precision as the public wire codec. Quantities are nonnegative signed-64-bit integers; consumers must not round large JSON integers or replace null with zero.",
+  "$ref": "#/$defs/report",
+  "$defs": {
+    "metricScope": {
+      "enum": [
+        "local_native_history",
+        "provider_account",
+        "provider_plan_window",
+        "native_goal",
+        "bridge_session",
+        "direct_provider_response",
+        "repository_history"
+      ],
+      "description": "Different populations, time bases and provider conventions. Account, plan, goal, direct-response and repository scopes must never be inferred into, or added to, a local-native-history report."
+    },
+    "scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source",
+        "from",
+        "to",
+        "asOf",
+        "sessionIDs"
+      ],
+      "properties": {
+        "source": {
+          "$ref": "#/$defs/metricScope"
+        },
+        "from": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "to": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "asOf": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "sessionIDs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        }
+      },
+      "description": "Half-open [from,to) window. null from means all saved history; asOf is the actual source snapshot time, not a fabricated now fallback. Session IDs are deduplicated and sorted."
+    },
+    "nativeID": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "provider",
+        "id"
+      ],
+      "properties": {
+        "provider": {
+          "enum": [
+            "claude",
+            "codex",
+            "grok",
+            "none"
+          ]
+        },
+        "id": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "modelKey": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "provider",
+        "model"
+      ],
+      "properties": {
+        "provider": {
+          "enum": [
+            "claude",
+            "codex",
+            "grok",
+            "none"
+          ]
+        },
+        "model": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "description": "Provider plus raw recorded model identity. A blank/missing identity remains null; it is not filled from a configured model or session title."
+    },
+    "providerUsage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "input",
+        "output",
+        "cached_input",
+        "cache_write_input",
+        "reasoning",
+        "total",
+        "provenance"
+      ],
+      "properties": {
+        "input": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 9223372036854775807
+        },
+        "output": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 9223372036854775807
+        },
+        "cached_input": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 9223372036854775807
+        },
+        "cache_write_input": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 9223372036854775807
+        },
+        "reasoning": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 9223372036854775807
+        },
+        "total": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 9223372036854775807
+        },
+        "provenance": {
+          "enum": [
+            "provider_reported",
+            "derived",
+            "estimated",
+            "unavailable"
+          ]
+        }
+      },
+      "description": "Provider-shaped token evidence. Codex input commonly includes cached_input; Claude fresh input and separate cache components use a different convention. cached_input and reasoning may be subsets of input/output. Do not add cache or reasoning subsets again. The independent reported total is authoritative; use normalized composition for mutually exclusive comparison fields. A computed native-minus-step remainder is derived; an unpartitioned legacy native pool retains its native provenance. kind/evidence record the allocation method without claiming a derived remainder was directly reported as a model request."
+    },
+    "breakdown": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "freshInput",
+        "rereadContext",
+        "cacheWrites",
+        "output",
+        "receipts",
+        "isComplete"
+      ],
+      "properties": {
+        "freshInput": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9223372036854775807
+        },
+        "rereadContext": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9223372036854775807
+        },
+        "cacheWrites": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9223372036854775807
+        },
+        "output": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9223372036854775807
+        },
+        "receipts": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9223372036854775807
+        },
+        "isComplete": {
+          "type": "boolean"
+        }
+      },
+      "description": "Reconciled, mutually exclusive token categories. Sum freshInput+rereadContext+cacheWrites+output with integer overflow checks. reasoning is already part of provider output when reported that way, never an extra category. This is distinct from provider-shaped usage.input."
+    },
+    "usageTotals": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "modelStepCount",
+        "tokensKnown",
+        "outputKnown",
+        "usageRecords",
+        "tokenReceipts",
+        "outputReceipts",
+        "partialUsageRecords",
+        "partialTokenReceipts",
+        "partialOutputTokenReceipts",
+        "tokensArePartial",
+        "outputIsPartial",
+        "tokenOverflow",
+        "outputOverflow",
+        "composition",
+        "weightedEquivalent",
+        "weightingVersion",
+        "provenance"
+      ],
+      "properties": {
+        "modelStepCount": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9223372036854775807
+        },
+        "tokensKnown": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 9223372036854775807
+        },
+        "outputKnown": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 9223372036854775807
+        },
+        "usageRecords": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9223372036854775807
+        },
+        "tokenReceipts": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9223372036854775807
+        },
+        "outputReceipts": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9223372036854775807
+        },
+        "partialUsageRecords": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9223372036854775807
+        },
+        "partialTokenReceipts": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9223372036854775807
+        },
+        "partialOutputTokenReceipts": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9223372036854775807
+        },
+        "tokensArePartial": {
+          "type": "boolean"
+        },
+        "outputIsPartial": {
+          "type": "boolean"
+        },
+        "tokenOverflow": {
+          "type": "boolean"
+        },
+        "outputOverflow": {
+          "type": "boolean"
+        },
+        "composition": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/breakdown"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "weightedEquivalent": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "weightingVersion": {
+          "const": "fresh-input-equivalent/1"
+        },
+        "provenance": {
+          "enum": [
+            "provider_reported",
+            "derived",
+            "estimated",
+            "unavailable"
+          ]
+        }
+      },
+      "description": "Known local subtotals and coverage. null is unknown/unavailable/overflow, never an assumed zero. Model steps are observed responses or validated counter advances, not native turns, human prompts or exact billable API attempts. weightedEquivalent is a versioned comparison heuristic requiring complete reconciled composition; it is not subscription consumption or a dollar cost."
+    },
+    "nativeCounters": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "submittedPrompts",
+        "confirmedHumanPrompts",
+        "toolCalls",
+        "records",
+        "isPartial",
+        "timeBasis"
+      ],
+      "properties": {
+        "submittedPrompts": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 9223372036854775807
+        },
+        "confirmedHumanPrompts": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 9223372036854775807
+        },
+        "toolCalls": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 9223372036854775807
+        },
+        "records": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9223372036854775807
+        },
+        "isPartial": {
+          "type": "boolean"
+        },
+        "timeBasis": {
+          "enum": [
+            "native_interval_or_response_event/1",
+            "whole_native_observation_unallocated/1"
+          ]
+        }
+      },
+      "description": "Native submission/tool observations, separate from model-step counts. Missing human origin is null, not human and not zero. Unallocated whole-turn counters are metadata, not current-window totals."
+    },
+    "totals": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "observedModelSteps",
+        "nativeRecords",
+        "sessions",
+        "usage",
+        "activeSeconds",
+        "agentSeconds",
+        "submittedPrompts",
+        "confirmedHumanPrompts",
+        "toolCalls",
+        "unallocatedNativeCounters",
+        "nativeCountersArePartial",
+        "modelStepsArePartial",
+        "modelIdentities",
+        "timedSessions",
+        "meanSessionSeconds",
+        "medianSessionSeconds"
+      ],
+      "properties": {
+        "observedModelSteps": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9223372036854775807
+        },
+        "nativeRecords": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9223372036854775807
+        },
+        "sessions": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9223372036854775807
+        },
+        "usage": {
+          "$ref": "#/$defs/usageTotals"
+        },
+        "activeSeconds": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "agentSeconds": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "submittedPrompts": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 9223372036854775807
+        },
+        "confirmedHumanPrompts": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 9223372036854775807
+        },
+        "toolCalls": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 9223372036854775807
+        },
+        "unallocatedNativeCounters": {
+          "$ref": "#/$defs/nativeCounters"
+        },
+        "nativeCountersArePartial": {
+          "type": "boolean"
+        },
+        "modelStepsArePartial": {
+          "type": "boolean"
+        },
+        "modelIdentities": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9223372036854775807
+        },
+        "timedSessions": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9223372036854775807
+        },
+        "meanSessionSeconds": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "medianSessionSeconds": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        }
+      },
+      "description": "Active time is the union of closed native intervals clipped to scope; agent time unions inside each session then sums sessions. Both can include waits and are not human productivity or CPU time. Open intervals are not extended. Session/native-record counts require ID union across bins, not addition. Token values are totals.usage.* on the wire; Swift convenience aliases are not duplicated wire fields."
+    },
+    "effortCount": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "count"
+      ],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9223372036854775807
+        }
+      }
+    },
+    "nativeAmount": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "nativeID",
+        "tokens"
+      ],
+      "properties": {
+        "nativeID": {
+          "$ref": "#/$defs/nativeID"
+        },
+        "tokens": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9223372036854775807
+        }
+      }
+    },
+    "modelRow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "key",
+        "observedModelSteps",
+        "observedStepCount",
+        "stepsArePartial",
+        "requests",
+        "requestCount",
+        "requestsArePartial",
+        "usageRecords",
+        "shareOfObservedSteps",
+        "tokens",
+        "output",
+        "tokenReceipts",
+        "outputReceipts",
+        "partialReceipts",
+        "breakdownReceipts",
+        "reread",
+        "efforts",
+        "sessions",
+        "lastUsed",
+        "nativeIDs",
+        "unmeasuredIDs",
+        "unallocatedIDs",
+        "unallocatedAmounts",
+        "nativeTurns",
+        "unmeasuredTurns",
+        "tokensArePartial",
+        "outputIsPartial"
+      ],
+      "properties": {
+        "key": {
+          "$ref": "#/$defs/modelKey"
+        },
+        "observedModelSteps": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9223372036854775807
+        },
+        "observedStepCount": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 9223372036854775807
+        },
+        "stepsArePartial": {
+          "type": "boolean"
+        },
+        "requests": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9223372036854775807,
+          "deprecated": true,
+          "description": "Compatibility coordinate alias of observedModelSteps, not API requests or native turns."
+        },
+        "requestCount": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 9223372036854775807,
+          "deprecated": true,
+          "description": "Compatibility alias of observedStepCount. null when only unmeasured legacy turns are known."
+        },
+        "requestsArePartial": {
+          "type": "boolean",
+          "deprecated": true,
+          "description": "Compatibility alias of stepsArePartial."
+        },
+        "usageRecords": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9223372036854775807
+        },
+        "shareOfObservedSteps": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1
+        },
+        "tokens": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 9223372036854775807
+        },
+        "output": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 9223372036854775807
+        },
+        "tokenReceipts": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9223372036854775807
+        },
+        "outputReceipts": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9223372036854775807
+        },
+        "partialReceipts": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9223372036854775807
+        },
+        "breakdownReceipts": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9223372036854775807
+        },
+        "reread": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1
+        },
+        "efforts": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/effortCount"
+          }
+        },
+        "sessions": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9223372036854775807
+        },
+        "lastUsed": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "nativeIDs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/nativeID"
+          },
+          "uniqueItems": true
+        },
+        "unmeasuredIDs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/nativeID"
+          },
+          "uniqueItems": true
+        },
+        "unallocatedIDs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/nativeID"
+          },
+          "uniqueItems": true
+        },
+        "unallocatedAmounts": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/nativeAmount"
+          }
+        },
+        "nativeTurns": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9223372036854775807
+        },
+        "unmeasuredTurns": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9223372036854775807
+        },
+        "tokensArePartial": {
+          "type": "boolean"
+        },
+        "outputIsPartial": {
+          "type": "boolean"
+        }
+      },
+      "description": "Provider/model row from the same canonical receipt reducer. Unknown-only legacy count has observedStepCount:null and share:null; the nonoptional observedModelSteps=0 is a layout/observed coordinate, not a claim of no calls. Coverage denominator is observed step usage records plus legacy native usage records. ID arrays and amount records are serialized in provider/ID order. Remainder usage is assigned to unknown model, not the turn's last context model."
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "totalObservedSteps",
+        "unmeasuredTurns",
+        "nativeTurns",
+        "unallocatedTokens",
+        "unallocatedTurns"
+      ],
+      "properties": {
+        "totalObservedSteps": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9223372036854775807
+        },
+        "unmeasuredTurns": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9223372036854775807
+        },
+        "nativeTurns": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9223372036854775807
+        },
+        "unallocatedTokens": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 9223372036854775807
+        },
+        "unallocatedTurns": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9223372036854775807
+        }
+      },
+      "description": "Distinct native IDs are unioned across model rows. unallocatedTokens is known native usage without safe placement in this selected window; it is NOT a period total and must not be added to totals.usage.tokensKnown."
+    },
+    "receipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "provider",
+        "sessionID",
+        "nativeTurnID",
+        "projectPath",
+        "kind",
+        "timestamp",
+        "intervalStart",
+        "intervalEnd",
+        "observedAt",
+        "model",
+        "effort",
+        "usage",
+        "usageIsPartial",
+        "countIsPartial",
+        "evidence",
+        "includedInTotals",
+        "timeBasis"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "provider": {
+          "enum": [
+            "claude",
+            "codex",
+            "grok",
+            "none"
+          ]
+        },
+        "sessionID": {
+          "type": "string",
+          "minLength": 1
+        },
+        "nativeTurnID": {
+          "type": "string",
+          "minLength": 1
+        },
+        "projectPath": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "kind": {
+          "enum": [
+            "model_step",
+            "native_usage_remainder",
+            "unmeasured",
+            "unplaced_native_usage"
+          ]
+        },
+        "timestamp": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "intervalStart": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "intervalEnd": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "observedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "model": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "effort": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "usage": {
+          "$ref": "#/$defs/providerUsage"
+        },
+        "usageIsPartial": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "countIsPartial": {
+          "type": "boolean"
+        },
+        "evidence": {
+          "type": "string"
+        },
+        "includedInTotals": {
+          "type": "boolean"
+        },
+        "timeBasis": {
+          "enum": [
+            "provider_event",
+            "native_interval",
+            "unplaced"
+          ]
+        }
+      },
+      "description": "Metadata-only normalized fact; no prompt, tool payload, output body or private reasoning. IDs are stable provider-scoped step IDs or native-turn/kind IDs. Model-step timestamp is its own provider event. Native intervals repeated across receipts must be deduplicated by provider/nativeTurnID for time. includedInTotals governs usage/count allocation, not whether native interval provenance exists.",
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "model_step"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          },
+          "then": {
+            "properties": {
+              "timeBasis": {
+                "const": "provider_event"
+              },
+              "includedInTotals": {
+                "const": true
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "native_usage_remainder"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          },
+          "then": {
+            "properties": {
+              "timestamp": {
+                "type": "null"
+              },
+              "model": {
+                "type": "null"
+              },
+              "timeBasis": {
+                "const": "native_interval"
+              },
+              "includedInTotals": {
+                "const": true
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "unplaced_native_usage"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          },
+          "then": {
+            "properties": {
+              "timestamp": {
+                "type": "null"
+              },
+              "model": {
+                "type": "null"
+              },
+              "timeBasis": {
+                "const": "unplaced"
+              },
+              "includedInTotals": {
+                "const": false
+              }
+            }
+          }
+        }
+      ],
+      "examples": [
+        {
+          "id": "codex:model-step:example-step",
+          "provider": "codex",
+          "sessionID": "example-session",
+          "nativeTurnID": "example-native-record",
+          "projectPath": null,
+          "kind": "model_step",
+          "timestamp": "2001-01-01T00:00:10Z",
+          "intervalStart": "2001-01-01T00:00:00Z",
+          "intervalEnd": "2001-01-01T00:00:20Z",
+          "observedAt": "2001-01-01T00:00:30Z",
+          "model": "example-model",
+          "effort": null,
+          "usage": {
+            "input": 5,
+            "output": 2,
+            "cached_input": 3,
+            "cache_write_input": 0,
+            "reasoning": 1,
+            "total": 7,
+            "provenance": "provider_reported"
+          },
+          "usageIsPartial": false,
+          "countIsPartial": false,
+          "evidence": "synthetic-contract-example/1",
+          "includedInTotals": true,
+          "timeBasis": "provider_event"
+        }
+      ]
+    },
+    "artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "path",
+        "kind",
+        "status"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        },
+        "kind": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string"
+        }
+      },
+      "description": "Saved file-change metadata only; not proof of agent authorship, acceptance or deployment."
+    },
+    "nativeObservation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "provider",
+        "sessionID",
+        "timestamp",
+        "startedAt",
+        "completedAt",
+        "submittedPrompts",
+        "confirmedHumanPrompts",
+        "toolCalls",
+        "categories",
+        "artifacts",
+        "status",
+        "countedInWindow",
+        "countersIncludedInWindow",
+        "timeBasis"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "provider": {
+          "enum": [
+            "claude",
+            "codex",
+            "grok",
+            "none"
+          ]
+        },
+        "sessionID": {
+          "type": "string"
+        },
+        "timestamp": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "startedAt": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "completedAt": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "submittedPrompts": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 9223372036854775807
+        },
+        "confirmedHumanPrompts": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 9223372036854775807
+        },
+        "toolCalls": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 9223372036854775807
+        },
+        "categories": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9223372036854775807
+          }
+        },
+        "artifacts": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/artifact"
+          }
+        },
+        "status": {
+          "type": "string"
+        },
+        "countedInWindow": {
+          "type": "boolean"
+        },
+        "countersIncludedInWindow": {
+          "type": "boolean"
+        },
+        "timeBasis": {
+          "const": "native_completion_else_start/1"
+        }
+      },
+      "description": "Non-token native facts. Counter/artifact inclusion requires its own temporal proof; completion alone does not assign a multi-day whole-turn counter into one day. Native record units differ across providers and are not model calls."
+    },
+    "sourceHealth": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "status",
+        "checkedAt",
+        "message"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string"
+        },
+        "checkedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "lastSuccessAt": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "message": {
+          "type": "string"
+        }
+      },
+      "description": "Collector coverage metadata, not a provider-wide usage guarantee."
+    },
+    "report": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "metricDefinitionsVersion",
+        "scope",
+        "modelRows",
+        "summary",
+        "receipts",
+        "nativeObservations",
+        "totals",
+        "warnings",
+        "isValid",
+        "sourceHealth",
+        "sourceCoverageIsPartial",
+        "sessionWorkSeconds",
+        "openGoalSessionIDs",
+        "participatingSessionIDs",
+        "sessionProjects"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": "accounting/1"
+        },
+        "metricDefinitionsVersion": {
+          "const": "activity-metrics/1"
+        },
+        "evidenceDigest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$",
+          "description": "Optional reproducibility fingerprint of the canonical accounting input/evidence. Same frozen input should reproduce it; it is not an independent security proof or the legacy tamper-evident trace hash chain."
+        },
+        "scope": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/scope"
+            },
+            {
+              "properties": {
+                "source": {
+                  "const": "local_native_history"
+                }
+              }
+            }
+          ]
+        },
+        "modelRows": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/modelRow"
+          }
+        },
+        "summary": {
+          "$ref": "#/$defs/summary"
+        },
+        "receipts": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/receipt"
+          }
+        },
+        "nativeObservations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/nativeObservation"
+          }
+        },
+        "totals": {
+          "$ref": "#/$defs/totals"
+        },
+        "warnings": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "isValid": {
+          "type": "boolean"
+        },
+        "sourceHealth": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/sourceHealth"
+          }
+        },
+        "sourceCoverageIsPartial": {
+          "type": "boolean"
+        },
+        "sessionWorkSeconds": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "number",
+            "minimum": 0
+          }
+        },
+        "openGoalSessionIDs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "participatingSessionIDs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "sessionProjects": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      },
+      "description": "One exact snapshot, selected native cohort and half-open window. Provider account, subscription plan, goal, direct-response and repository metrics are separate scopes and are never added by inference. Unknown measurements remain null; reported zero is a distinct value. Model rows, totals and series derive from the same normalized receipts and ownership rules."
+    },
+    "point": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "start",
+        "windowStart",
+        "end",
+        "usage",
+        "nativeRecords",
+        "nativeRecordIDs",
+        "sessionIDs",
+        "byProvider",
+        "closedIntervalReceipts"
+      ],
+      "properties": {
+        "start": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "windowStart": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "end": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "usage": {
+          "$ref": "#/$defs/usageTotals"
+        },
+        "nativeRecords": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9223372036854775807
+        },
+        "nativeRecordIDs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "sessionIDs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "activeSeconds": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "agentSeconds": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "byProvider": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/usageTotals"
+          }
+        },
+        "closedIntervalReceipts": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9223372036854775807
+        }
+      },
+      "description": "One clipped calendar bucket. Optional time values may be absent in a series point when unmeasured; absence/null never means zero. Use nativeRecordIDs/sessionIDs union to reconcile distinct counts."
+    },
+    "series": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "scope",
+        "granularity",
+        "timeZone",
+        "points",
+        "total",
+        "unallocated",
+        "unallocatedByProvider",
+        "unallocatedNativeRecordIDs",
+        "unallocatedSessionIDs",
+        "warnings"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": "accounting/1"
+        },
+        "scope": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/scope"
+            },
+            {
+              "properties": {
+                "source": {
+                  "const": "local_native_history"
+                }
+              }
+            }
+          ]
+        },
+        "granularity": {
+          "enum": [
+            "hour",
+            "day"
+          ]
+        },
+        "timeZone": {
+          "type": "string"
+        },
+        "points": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/point"
+          }
+        },
+        "total": {
+          "$ref": "#/$defs/usageTotals"
+        },
+        "unallocated": {
+          "$ref": "#/$defs/usageTotals"
+        },
+        "unallocatedByProvider": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/usageTotals"
+          }
+        },
+        "unallocatedNativeRecordIDs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "unallocatedSessionIDs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "warnings": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "description": "Sibling series contract. For usage, known bins plus included-but-unbinnable unallocated subtotal conserve total, without a guessed date. A native remainder fits a bucket only with whole-interval proof; all-history open remainders may remain unbinned. Usage excluded from the report window stays only in the ledger/summary and must not be added to these totals."
+    }
+  }
+}
