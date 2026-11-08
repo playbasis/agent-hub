@@ -1,60 +1,90 @@
 # Playbasis AI Agent Hub
 
-**Claude Code and Codex, working as one team on your Mac.**
+**See what your Claude Code and Codex agents actually get done.**
 
-Agent Hub is a native macOS menu-bar app for developers who use Anthropic's
-Claude Code, OpenAI's Codex, or both. It lets the two agents hand work to each
-other, and shows you plainly what they did, how long it took and how much of
-your plan it used. Everything runs and stays on your Mac: no account to create,
-no server, and no API key needed to start.
+Agent Hub is a native macOS companion for developers who code with
+Anthropic's Claude Code, OpenAI's Codex, or both. It reads the sessions both
+agents already keep on your Mac and turns them into a dashboard: where the
+time and tokens went, which models and skills did the work, which commits
+they shipped, and how fast you are using up your plan. Everything stays on
+your Mac: no account to create, no server, and no API key needed.
 
 > **Status: private preview (0.1).** Built from source, ad-hoc signed, not yet
 > notarized. Open source under the [Apache License 2.0](LICENSE).
 
+## What you see
+
+| Page | What it answers |
+| --- | --- |
+| **Overview** | How much got done today, this week or this month: active time, sessions, model steps and tokens, agents at work by day and by hour, where the tokens went (context re-read versus text written), what shipped, and highlights for anything surprising, such as a weekly limit on pace to run out before it resets. |
+| **Sessions** | Every Claude Code and Codex session, live and past, side by side. Open any request to see its model, effort, tokens, tools, skills and sub-agents. |
+| **Goals** | Each goal replayed as swimlanes across the sessions that worked on it, with the evidence of what it produced. |
+| **Agents** | Every agent and sub-agent that worked, as a team roster. |
+| **Projects** | Trends per project, and **shipped code**: commits linked to the sessions that wrote them (by co-author trailer, the same files, or timing), lines changed and tokens per line. |
+| **Models** | Each model's share of the work, how it works (context sent and text written per step), and the effort levels you used. |
+| **Skills** | Which skills each agent can load and actually loads, at what context cost, plus the instruction files every session started with (`AGENTS.md`, `CLAUDE.md`, rules and memory), with their history so you can see when they changed. |
+| **Accounts and Credits** | Claude and ChatGPT plan limits and reset times as gauges, Codex credits kept separate from plan allowance, and credit history with cautious forecasts. |
+| **Journal** | A daily brief of what your agents did, written from the day's records. |
+| **Verification and Logs** | Per-request receipts (model, effort, tokens, tools), hash-chained so a later edit shows, and a searchable live log. |
+
+The menu-bar panel keeps the essentials one click away: plan limits and
+credits, with a warning when one is on pace to run out, your pinned goal,
+today's totals and the agents at work.
+
+## Numbers you can trust
+
+- **Measured, not guessed.** Every figure comes from one versioned accounting
+  pass in tested code. Missing data shows as "—", never as zero, and a total
+  built from partial records is marked "≥".
+- **Both agents counted the same way.** Claude Code and Codex sit side by side
+  under the same definitions, so comparisons are fair.
+- **The method is one click away.** Each card leads with the figure; how it
+  was measured sits behind an ⓘ.
+- **Fast on large histories.** Built and measured against hundreds of
+  sessions and more than a hundred thousand model steps. Reports are prepared
+  off the main thread, and the app sits near zero CPU when idle.
+
 ## Built for Claude Code and Codex
 
-Agent Hub drives each agent through its own official CLI, the same way you
-would in a terminal. It never touches their credential files.
+Agent Hub works with each agent through its own official CLI and files, the
+way you would in a terminal. It never touches their credential files.
 
 | | Claude Code (`claude`) | Codex (`codex`) |
 | --- | --- | --- |
-| **Sign in** | Runs `claude auth login` for you | Uses Codex's own `codex app-server` sign-in (ChatGPT plans) |
-| **Plan limits** | Reads Claude Code's own `/usage` | Asks `codex app-server` for your rate limits |
-| **Session history** | Reads your Claude Code transcripts in `~/.claude/projects` | Asks `codex app-server` for your threads |
-| **Runs work** | `claude -p`, resuming the same session between turns | `codex exec`, resuming the same thread between turns |
-| **Team Room** | Lead or worker, with room tools over MCP | Lead or worker |
-| **Live events** | Optional Claude Code hooks (`bridge install-hooks`) | From `codex exec --json` |
+| **Session history** | Reads your transcripts in `~/.claude/projects` | Asks `codex app-server` for your threads and goals |
+| **Each request** | Model, effort, tokens, tools, skills and sub-agents from the transcript | The same, from the thread and its rollout |
+| **Skills and instructions** | Skill loads, `CLAUDE.md`, rules, imports and memory | `SKILL.md` reads and the `AGENTS.md` chain |
+| **Plan limits** | Claude Code's own `/usage` | `codex app-server` rate limits and credits |
+| **Sign in** | Runs `claude auth login` for you | Codex's own `app-server` sign-in (ChatGPT plans) |
+| **Live events** | Optional hooks (`bridge install-hooks`) | From `codex exec --json` |
 
-Either agent works alone; Team Room is at its best with both. Tested with
-Claude Code 2.1.258 and Codex CLI 0.145 on macOS 14.
+Either agent works on its own. Tested with Claude Code 2.1.258 and Codex CLI
+0.145 on macOS 14.
+
+## Also included
+
+- **Team Room (experimental).** Hand a goal to a lead (Claude, Codex or
+  Gemini), let Claude and Codex build it together, and keep every hand-off on
+  record. See [Team Room](docs/TEAM-ROOM.md).
+- **Economic reports** from the `bridge economics` command: what you spent,
+  what work landed and the comparable human effort for a day, week, month or
+  year, with every figure linked to its evidence and unknowns left unknown.
+  See [Economic reporting](docs/ECONOMIC-REPORTING.md).
+- **A local API and CLI**, so scripts can read the same reports as the app.
+- **Optional extras**, off until you add them: a Gemini coordinator, a local
+  Ollama router, and GLM Chat through your own DigitalOcean inference key.
 
 ## Who it is for
 
-- **Developers who use Claude Code, Codex, or both** and want one place to run
-  them, see their sessions and stop juggling terminals.
+- **Developers and vibe coders using Claude Code, Codex, or both** who want to
+  see how their agents turn tokens and plan allowance into working code.
 - **Founders and small teams** who want to know what their agents actually
   shipped and what it cost in time and plan usage, without a hosted dashboard.
 - **Anyone careful about privacy.** Agent Hub signs in through each provider's
   own CLI, never reads their credential files, and keeps its records local.
 
-It is not a hosted service, it does not run on Windows or Linux, and it is not
-a promise that unattended agents are risk-free. You stay in charge of what they
-are allowed to touch.
-
-## What it does
-
-- **Team Room.** Describe what you want built. A lead you choose plans the
-  work, Claude and Codex build it, and either can ask the other for help. Every
-  hand-off and decision is recorded.
-- **Accounts.** Sign in with your existing Claude and ChatGPT subscriptions from
-  inside the app. Plan limits and reset times show as gauges.
-- **Reports.** Activity by day and hour, models, skills and instruction files
-  in use, shipped commits, a daily brief, and economics that keep unknowns
-  visibly unknown instead of guessing.
-- **Logs and proof.** A searchable live log, and per-turn receipts (model,
-  effort, tokens, tools), hash-chained so a later edit shows.
-- **Optional extras**, off until you add them: a Gemini coordinator, a local
-  Ollama router, and GLM Chat through your own DigitalOcean inference key.
+It is not a hosted service and it does not run on Windows or Linux. It
+reports on your agents; it doesn't replace them.
 
 ## What you need
 
@@ -83,13 +113,14 @@ a Gatekeeper warning.
 
 ## First five minutes
 
-1. **Accounts:** press **Link Claude** and/or **Link ChatGPT** and finish the
-   sign-in in your browser. Skip this if your CLIs are already signed in.
-2. **Team:** start a team, choose a project folder and say what you want built.
-   Claude leads unless you add a Gemini key; you can pick Codex as lead in
-   Team setup.
-3. **Reports:** your existing Claude Code and Codex sessions appear, and new
-   work arrives as it happens.
+1. **Overview:** your existing Claude Code and Codex sessions appear straight
+   away, and new work arrives as it happens.
+2. **Accounts:** press **Link Claude** and/or **Link ChatGPT** to see plan
+   limits. Skip this if your CLIs are already signed in.
+3. **Projects:** press **Scan projects** to link commits to the sessions that
+   wrote them.
+4. **Skills:** check which skills and instruction files each agent is
+   really using.
 
 ## Your keys and your data
 
