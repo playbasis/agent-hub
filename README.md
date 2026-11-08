@@ -9,7 +9,7 @@ time and tokens went, which models and skills did the work, which commits
 they shipped, and how fast you are using up your plan. Everything stays on
 your Mac: no account to create, no server, and no API key needed.
 
-> **Status: private preview (0.1).** Built from source, ad-hoc signed, not yet
+> **Status: public preview (0.1).** Built from source, ad-hoc signed, not yet
 > notarized. Open source under the [Apache License 2.0](LICENSE).
 
 ![The Overview page: what stands out this week, key figures, agents at work and tokens per day, and what shipped](docs/screenshots/overview.png)
@@ -123,7 +123,7 @@ reports on your agents; it doesn't replace them.
 ## Install
 
 ```bash
-gh repo clone playbasis/agent-hub     # private for now: ask a maintainer for access
+git clone https://github.com/playbasis/agent-hub.git
 cd agent-hub
 make doctor                           # checks the list above; changes nothing
 make install                          # builds the app and installs it in ~/Applications

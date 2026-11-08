@@ -282,7 +282,7 @@ struct TokenActivityChart: View {
                     Text("Same saved receipts as Models and metrics exports. This is local activity, not subscription capacity or a bill. Blank buckets mean no timed measurement, not necessarily no work.")
                     if let status = snapshot.statusMessage { Text(status).foregroundStyle(BridgeTheme.warning) }
                     if snapshot.hourlyScope != nil {
-                        Text("Snapshot: \(Self.snapshotTime(snapshot.generatedAt)) · Bangkok time")
+                        Text("Snapshot: \(Self.snapshotTime(snapshot.generatedAt)) · \(Self.reportingZoneName)")
                     }
                     if metric == .weighted { Text("Comparison policy: fresh-input-equivalent/1") }
                 }
@@ -314,6 +314,11 @@ struct TokenActivityChart: View {
     static func compact(_ value: Double) -> String {
         guard value.isFinite else { return "Unavailable" }
         return value.formatted(.number.notation(.compactName).precision(.fractionLength(0 ... 1)))
+    }
+    /// The zone the hours are bucketed in: this Mac's own, never a fixed city.
+    private static var reportingZoneName: String {
+        let zone = ActivityAnalytics.reportingTimeZone
+        return zone.localizedName(for: .standard, locale: .current) ?? zone.identifier
     }
     private static func snapshotTime(_ value: Date) -> String {
         let formatter = DateFormatter(); formatter.calendar = Calendar(identifier: .gregorian)
