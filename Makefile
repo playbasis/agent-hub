@@ -1,4 +1,4 @@
-.PHONY: help doctor bootstrap build test hygiene check run preview release app install open uninstall hooks
+.PHONY: help doctor bootstrap build test hygiene check run preview screenshots release app install open uninstall hooks
 
 help:
 	@echo 'make doctor     check this Mac is ready (read-only)'
@@ -7,6 +7,7 @@ help:
 	@echo 'make check      build, test and run the hygiene check'
 	@echo 'make run        run the menu-bar app from source'
 	@echo 'make preview    open one Hub page beside the installed app (PAGE=Models)'
+	@echo 'make screenshots  re-render docs/screenshots from invented demo data (sandboxed)'
 	@echo 'make hooks      block pushes that would publish keys or personal paths'
 	@echo 'make uninstall  move the app to the Trash (PURGE=1 also moves its data)'
 
@@ -35,6 +36,10 @@ run:
 # Opens one Hub page in a diagnostic window beside an installed copy: make preview PAGE=Models
 preview:
 	BRIDGE_UI_PREVIEW=1 BRIDGE_REPORTS_PREVIEW=1 BRIDGE_REPORTS_SECTION="$(or $(PAGE),Overview)" swift run --package-path apps/MenuBar ClaudeCodexBridgeMenuBar
+
+# Renders the README screenshots from invented data inside a sandbox that cannot read your home folder.
+screenshots:
+	./scripts/screenshots.sh $(NAMES)
 
 release:
 	swift build -c release --package-path apps/MenuBar

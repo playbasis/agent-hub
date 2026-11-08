@@ -28,6 +28,7 @@ its last lines into the pull request.
 | Look at one Hub page without touching the installed app | `make preview PAGE=Models` |
 | Build and install the signed app | `make install`, then `make open` |
 | Remove it | `make uninstall` (`PURGE=1` also moves history and keys to the Trash) |
+| Re-render the README screenshots | `make screenshots` (`make screenshots NAMES="models goals"` for some) |
 
 `make preview` opens the Hub in a diagnostic window that runs beside an
 installed copy and reads the same local history. Pages are the sidebar names:
@@ -64,6 +65,11 @@ repository:
 ```bash
 HUB_EXTRA_FORBIDDEN='my-name|client-co|internal.example' make hygiene
 ```
+
+Screenshots in `docs/screenshots` come only from `make screenshots`. It renders
+invented demo activity inside a macOS sandbox that cannot read your home folder
+or the network, so a real project name can't appear. Never commit a screenshot
+of your own history; to add a page, add it to `scripts/screenshots.sh`.
 
 Test fixtures use placeholder people and paths (`/Users/example/...`), never
 real transcripts. Tests that read real local history are opt-in through an

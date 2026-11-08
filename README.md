@@ -12,6 +12,10 @@ your Mac: no account to create, no server, and no API key needed.
 > **Status: private preview (0.1).** Built from source, ad-hoc signed, not yet
 > notarized. Open source under the [Apache License 2.0](LICENSE).
 
+![The Overview page: what stands out this week, key figures, agents at work and tokens per day, and what shipped](docs/screenshots/overview.png)
+
+<sub>Every screenshot in this README is rendered from invented demo data, never a real history. Regenerate them with `make screenshots`.</sub>
+
 ## What you see
 
 | Page | What it answers |
@@ -30,6 +34,28 @@ your Mac: no account to create, no server, and no API key needed.
 The menu-bar panel keeps the essentials one click away: plan limits and
 credits, with a warning when one is on pace to run out, your pinned goal,
 today's totals and the agents at work.
+
+### A closer look
+
+**When your agents work, and what the work involved.** A weekday-by-hour heatmap, the mix of tools used, and each model's share of the steps.
+
+![When agents work, what the work involved, and the share of work by model](docs/screenshots/activity.png)
+
+**Which model did the work, and how each one behaves.** Share of the work, context sent and text written per step, effort levels and how much was re-read context.
+
+![The Models page: share of the work, context sent and written per step, and a table per model](docs/screenshots/models.png)
+
+**What shipped.** Commits linked to the sessions that wrote them, with lines changed, tokens per line and which commits were co-authored by an agent.
+
+![The Projects page: shipped code with commits linked to agent sessions, and per-project activity](docs/screenshots/projects.png)
+
+**Goals, replayed.** Each goal as swimlanes across the agents that worked on it, with every turn behind it.
+
+![A goal replayed as swimlanes, with the turns that made it up](docs/screenshots/goals.png)
+
+**Every agent and sub-agent.** Who did what, in which project, with which model and effort.
+
+![The Agents page: a card per agent with its role, model, tool mix and time](docs/screenshots/agents.png)
 
 ## Numbers you can trust
 
@@ -185,6 +211,7 @@ bridge start --project /path/to/project --goal "Build it, test it, stop when ver
 make help      # every target
 make check     # build + tests + the repository hygiene check
 make preview PAGE=Models   # one Hub page in a window beside the installed app
+make screenshots           # re-render docs/screenshots from invented demo data
 make hooks     # run the hygiene check and gitleaks before every push
 ```
 
